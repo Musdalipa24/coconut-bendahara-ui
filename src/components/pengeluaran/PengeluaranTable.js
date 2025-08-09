@@ -52,7 +52,7 @@ export default function PengeluaranTable({
           mb: 3
         }}>
           <Typography variant="h6" component="div" sx={{ color: '#1a237e' }}>
-            Kelola data pengeluaran desa dengan mudah
+            Kelola data pengeluaran organisasi dengan mudah
           </Typography>
           <FormControl
             variant="outlined"
