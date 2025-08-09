@@ -1,6 +1,6 @@
 'use client'
 
-import { AppBar, Drawer, IconButton, List, ListItem, ListItemIcon, ListItemText, Toolbar, Typography, Box, Menu, MenuItem, Container, Grid } from '@mui/material'
+import { AppBar, Drawer, IconButton, List, ListItem, ListItemIcon, ListItemText, Toolbar, Typography, Box, Menu, MenuItem, Container, Grid, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import PaymentsIcon from '@mui/icons-material/Payments'
@@ -17,6 +17,7 @@ import { useSoftUIController, setMiniSidenav } from '@/context'
 import { colors, shadows } from '@/styles/colors'
 import { useState, useEffect } from 'react'
 import Cookies from 'js-cookie'
+import { authService } from '@/services/authService'
 
 const menuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
@@ -40,6 +41,43 @@ export default function DashboardLayout({ children }) {
   const [user, setUser] = useState(null)
   const router = useRouter()
   const open = Boolean(anchorEl)
+  // State untuk dialog login
+  const [openLoginDialog, setOpenLoginDialog] = useState(false);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const isLoggedIn = localStorage.getItem('isLoggedIn');
+      if (isLoggedIn !== 'true') {
+        setOpenLoginDialog(true);
+      }
+    }
+  }, []);
+  // Fungsi login
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    setLoginLoading(true);
+    const result = await authService.login(username, password);
+    if (result.success) {
+      localStorage.setItem('isLoggedIn', 'true');
+      setOpenLoginDialog(false);
+      setUsername('');
+      setPassword('');
+    } else {
+      setLoginError(result.error || 'Username atau password salah!');
+    }
+    setLoginLoading(false);
+  };
+  // State untuk dialog ganti password
+  const [openPasswordDialog, setOpenPasswordDialog] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loadingPassword, setLoadingPassword] = useState(false);
+  const [alertPassword, setAlertPassword] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -60,6 +98,36 @@ export default function DashboardLayout({ children }) {
 
   const handleClose = () => {
     setAnchorEl(null)
+  }
+  const handleOpenPasswordDialog = () => {
+    setOpenPasswordDialog(true);
+    setAnchorEl(null);
+  }
+  const handleClosePasswordDialog = () => {
+    setOpenPasswordDialog(false);
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setAlertPassword({ open: false, message: '', severity: 'success' });
+  }
+  const handleSubmitPassword = (e) => {
+    e.preventDefault();
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setAlertPassword({ open: true, message: 'Semua field harus diisi!', severity: 'error' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setAlertPassword({ open: true, message: 'Password baru dan konfirmasi tidak sama!', severity: 'error' });
+      return;
+    }
+    setLoadingPassword(true);
+    setTimeout(() => {
+      setLoadingPassword(false);
+      setAlertPassword({ open: true, message: 'Password berhasil diganti!', severity: 'success' });
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    }, 1500);
   }
 
   const toggleDarkMode = () => {
@@ -86,7 +154,7 @@ export default function DashboardLayout({ children }) {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <Image
-            src="/image.png"
+            src="/logo-lanscape.png"
             alt="COCONUT Logo"
             style={{ marginRight: '12px', maxWidth: '100%', height: 'auto', display: 'block' }}
             width={180}
@@ -154,26 +222,6 @@ export default function DashboardLayout({ children }) {
           </ListItem>
         ))}
       </List>
-
-      <List sx={{ px: 2, mt: 'auto' }}>
-        <ListItem
-          onClick={handleLogout}
-          sx={{
-            borderRadius: '12px',
-            py: 1,
-            color: darkMode ? '#fff' : colors.text.secondary,
-            cursor: 'pointer',
-            '&:hover': {
-              bgcolor: darkMode ? 'rgba(255, 255, 255, 0.05)' : `${colors.primary.light}20`,
-            },
-          }}
-        >
-          <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
-            <LogoutIcon />
-          </ListItemIcon>
-          <ListItemText primary="Logout" />
-        </ListItem>
-      </List>
     </Box>
   )
 
@@ -183,6 +231,9 @@ export default function DashboardLayout({ children }) {
       bgcolor: darkMode ? '#1a1a1a' : '#F8F9FA',
       minHeight: '100vh',
       color: darkMode ? '#fff' : colors.text.primary,
+      transition: 'filter 0.3s',
+      filter: openLoginDialog ? 'blur(20px)' : 'none',
+      pointerEvents: openLoginDialog ? 'none' : 'auto',
     }}>
       <AppBar
         position="fixed"
@@ -242,7 +293,7 @@ export default function DashboardLayout({ children }) {
               aria-haspopup="true"
               aria-expanded={open ? 'true' : undefined}
             >
-              <SettingsIcon />
+              <SettingsIcon sx={{ fontSize: 40 }} />
             </IconButton>
             <Menu
               id="settings-menu"
@@ -271,23 +322,13 @@ export default function DashboardLayout({ children }) {
                 </ListItemIcon>
                 <ListItemText>{darkMode ? 'Light Mode' : 'Dark Mode'}</ListItemText>
               </MenuItem>
+              <MenuItem onClick={handleOpenPasswordDialog}>
+                <ListItemIcon>
+                  <SettingsIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Ganti Password</ListItemText>
+              </MenuItem>
             </Menu>
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: colors.primary.main,
-                color: 'white',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold',
-                fontSize: '0.875rem'
-              }}
-            >
-              {user?.name?.charAt(0) || 'A'}
-            </Box>
           </Box>
         </Toolbar>
       </AppBar>
@@ -363,6 +404,85 @@ export default function DashboardLayout({ children }) {
         <Box sx={{ flex: 1 }}>
           {children}
         </Box>
+
+        {/* Dialog Login */}
+        <Dialog open={openLoginDialog} maxWidth="xs" fullWidth>
+          <DialogTitle>Login Bendahara</DialogTitle>
+          <DialogContent>
+            {loginError && (
+              <Alert severity="error" sx={{ mb: 2 }} onClose={() => setLoginError('')}>
+                {loginError}
+              </Alert>
+            )}
+            <Box component="form" onSubmit={handleLoginSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              <TextField
+                label="Username"
+                type="text"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                required
+                fullWidth
+              />
+              <TextField
+                label="Password"
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                fullWidth
+              />
+              <DialogActions sx={{ px: 0 }}>
+                <Button type="submit" variant="contained" color="primary" fullWidth disabled={loginLoading}>
+                  {loginLoading ? 'Memproses...' : 'Login'}
+                </Button>
+              </DialogActions>
+            </Box>
+          </DialogContent>
+        </Dialog>
+
+        {/* Dialog Ganti Password */}
+        <Dialog open={openPasswordDialog} onClose={handleClosePasswordDialog} maxWidth="xs" fullWidth>
+          <DialogTitle>Ganti Password</DialogTitle>
+          <DialogContent>
+            {alertPassword.open && (
+              <Alert severity={alertPassword.severity} sx={{ mb: 2 }} onClose={() => setAlertPassword({ ...alertPassword, open: false })}>
+                {alertPassword.message}
+              </Alert>
+            )}
+            <Box component="form" onSubmit={handleSubmitPassword} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+              <TextField
+                label="Password Lama"
+                type="password"
+                value={oldPassword}
+                onChange={e => setOldPassword(e.target.value)}
+                required
+                fullWidth
+              />
+              <TextField
+                label="Password Baru"
+                type="password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                required
+                fullWidth
+              />
+              <TextField
+                label="Konfirmasi Password Baru"
+                type="password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                required
+                fullWidth
+              />
+              <DialogActions sx={{ px: 0 }}>
+                <Button onClick={handleClosePasswordDialog} color="secondary">Batal</Button>
+                <Button type="submit" variant="contained" color="primary" disabled={loadingPassword}>
+                  {loadingPassword ? 'Memproses...' : 'Ganti Password'}
+                </Button>
+              </DialogActions>
+            </Box>
+          </DialogContent>
+        </Dialog>
 
         <Box
           component="footer"

@@ -4,49 +4,29 @@ import Cookies from 'js-cookie';
 export const authService = {
     login: async (username, password) => {
         try {
-            // Log request untuk debugging
-            console.log('Sending login request with:', {
-                nik: username,
-                password: password
-            });
-
-            // Kirim request login ke API route lokal
-            const response = await fetch('/api/auth/login', {
+            const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
+            const response = await fetch(`${apiUrl}/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
-                body: JSON.stringify({
-                    username: username,
-                    password: password
-                })
+                body: JSON.stringify({ username, password })
             });
-
-            // Log response untuk debugging
-            console.log('Response status:', response.status);
-            
-            // Parse response
             const responseData = await response.json();
-            console.log('Response data:', responseData);
-
-            // Jika login gagal
             if (!response.ok || !responseData.success) {
                 return {
                     success: false,
                     error: responseData.error || responseData.message || 'Login gagal'
                 };
             }
-
             // Jika login berhasil
-            const { token, user } = responseData.data;
-            
-            // Simpan token di cookies dengan expiry 1 hari
-            Cookies.set('authToken', token, { expires: 1 });
-            
-            // Simpan user data di localStorage
+            const user = responseData.user || responseData.data?.user || { username };
+            const token = responseData.token || responseData.data?.token;
+            if (token) {
+                Cookies.set('authToken', token, { expires: 1 });
+            }
             localStorage.setItem('user', JSON.stringify(user));
-
             return {
                 success: true,
                 data: {
@@ -54,7 +34,6 @@ export const authService = {
                     user
                 }
             };
-
         } catch (error) {
             console.error('Login error:', error);
             return {

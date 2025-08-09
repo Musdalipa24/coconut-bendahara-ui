@@ -13,7 +13,7 @@ const inter = Inter({ subsets: ['latin'] })
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <title>COCONUT Computer Club Bendahara</title>
+      <title>Bendahara - COCONUT Computer Club</title>
       <body className={inter.className}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
