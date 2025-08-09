@@ -4,7 +4,7 @@ import Cookies from 'js-cookie';
 export const authService = {
     login: async (username, password) => {
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
+            const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
             const response = await fetch(`${apiUrl}/login`, {
                 method: 'POST',
                 headers: {
