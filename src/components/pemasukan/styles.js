@@ -1,5 +1,25 @@
 import { styled } from '@mui/material/styles'
 
+export const IuranButton = styled('button')(({ theme }) => ({
+  backgroundColor: '#2e7d32',
+  color: 'white',
+  borderRadius: '12px',
+  textTransform: 'none',
+  fontWeight: 600,
+  padding: '12px 24px',
+  fontSize: '1rem',
+  boxShadow: '0 2px 8px rgba(46,125,50,0.15)',
+  '&:hover': {
+    backgroundColor: '#1b5e20',
+    boxShadow: '0 4px 12px rgba(46,125,50,0.25)',
+    transform: 'translateY(-1px)'
+  },
+  '&:active': {
+    transform: 'translateY(0)'
+  },
+  transition: 'all 0.2s ease',
+}))
+
 export const StyledCard = styled('div')(({ theme }) => ({
   backgroundColor: '#ffffff',
   borderRadius: '16px',

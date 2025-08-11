@@ -31,7 +31,7 @@ export default function WelcomeCard({ totalSaldo }) {
     <StyledCard>
       <ContentWrapper>
         <Typography variant="h3" fontWeight={700} mb={2}>
-          Selamat Datang di Sistem Bendahara COCONUT Computer Club
+          Sistem Bendahara COCONUT Computer Club
         </Typography>
         <Typography variant="body1" mb={4}>
           Kelola keuangan organisasi komputer dengan mudah dan transparan.
