@@ -13,7 +13,7 @@ export default function PengeluaranHeader({
   return (
     <>
       <Box sx={{ 
-        background: 'linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)',
+        background: 'linear-gradient(135deg, #c62828 0%, #b71c1c 100%)',
         padding: '24px',
         color: 'white',
         borderRadius: '16px',
@@ -35,19 +35,11 @@ export default function PengeluaranHeader({
           variant="contained"
           startIcon={<AddIcon />}
           onClick={handleAdd}
-          sx={{ mt: 2 }}
+          sx={{ p: 2.5 }}
         >
           Tambah Pengeluaran
         </DesktopAddButton>
       </Box>
-
-      <AddButton
-        variant="contained"
-        startIcon={<AddIcon />}
-        onClick={handleAdd}
-      >
-        Tambah Pengeluaran
-      </AddButton>
     </>
   )
 }

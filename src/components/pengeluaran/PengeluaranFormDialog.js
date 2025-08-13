@@ -53,7 +53,7 @@ export default function PengeluaranFormDialog({
         pt: 3,
         px: 3,
         borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
-        background: 'linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)',
+        background: 'linear-gradient(135deg, #c62828 0%, #b71c1c 100%)',
         color: 'white',
         display: 'flex',
         alignItems: 'center',
@@ -102,7 +102,7 @@ export default function PengeluaranFormDialog({
         }}
       >
         <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 500, color: '#1a237e' }}>
+          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 500, color: '#c62828' }}>
             Informasi Pengeluaran
           </Typography>
           <Divider />
@@ -124,10 +124,10 @@ export default function PengeluaranFormDialog({
             '& .MuiOutlinedInput-root': {
               borderRadius: '12px',
               '&:hover fieldset': {
-                borderColor: '#1a237e',
+                borderColor: '#c62828',
               },
               '&.Mui-focused fieldset': {
-                borderColor: '#1a237e',
+                borderColor: '#c62828',
                 borderWidth: '2px',
               }
             }
@@ -160,12 +160,12 @@ export default function PengeluaranFormDialog({
               borderRadius: '12px',
               '&:hover': {
                 '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#1a237e',
+                  borderColor: '#c62828',
                 }
               },
               '&.Mui-focused': {
                 '& .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#1a237e',
+                  borderColor: '#c62828',
                   borderWidth: '2px',
                 }
               }
@@ -188,10 +188,10 @@ export default function PengeluaranFormDialog({
             '& .MuiOutlinedInput-root': {
               borderRadius: '12px',
               '&:hover fieldset': {
-                borderColor: '#1a237e',
+                borderColor: '#c62828',
               },
               '&.Mui-focused fieldset': {
-                borderColor: '#1a237e',
+                borderColor: '#c62828',
                 borderWidth: '2px',
               }
             }
@@ -223,7 +223,7 @@ export default function PengeluaranFormDialog({
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               '&:hover': {
-                borderColor: '#1a237e',
+                borderColor: '#c62828',
                 bgcolor: 'rgba(26, 35, 126, 0.04)'
               }
             }}
@@ -291,8 +291,8 @@ export default function PengeluaranFormDialog({
             borderColor: '#666',
             color: '#666',
             '&:hover': {
-              borderColor: '#1a237e',
-              color: '#1a237e',
+              borderColor: '#c62828',
+              color: '#c62828',
               bgcolor: 'rgba(26, 35, 126, 0.04)'
             },
             px: 3,
@@ -307,9 +307,9 @@ export default function PengeluaranFormDialog({
           disabled={loading}
           sx={{
             borderRadius: '10px',
-            bgcolor: '#1a237e',
+            bgcolor: '#c62828',
             '&:hover': {
-              bgcolor: '#0d47a1'
+              bgcolor: '#b71c1c'
             },
             px: 3,
             py: 1,

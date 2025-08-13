@@ -1,26 +1,6 @@
 import { styled } from '@mui/material/styles'
 
-export const IuranButton = styled('button')(({}) => ({
-  backgroundColor: '#2e7d32',
-  color: 'white',
-  borderRadius: '12px',
-  textTransform: 'none',
-  fontWeight: 600,
-  padding: '12px 24px',
-  fontSize: '1rem',
-  boxShadow: '0 2px 8px rgba(46,125,50,0.15)',
-  '&:hover': {
-    backgroundColor: '#1b5e20',
-    boxShadow: '0 4px 12px rgba(46,125,50,0.25)',
-    transform: 'translateY(-1px)'
-  },
-  '&:active': {
-    transform: 'translateY(0)'
-  },
-  transition: 'all 0.2s ease',
-}))
-
-export const StyledCard = styled('div')(({}) => ({
+export const StyledCard = styled('div')(({ theme }) => ({
   backgroundColor: '#ffffff',
   borderRadius: '16px',
   boxShadow: '0 4px 20px 0 rgba(0,0,0,0.05)',
@@ -29,7 +9,7 @@ export const StyledCard = styled('div')(({}) => ({
 
 export const DesktopAddButton = styled('button')(({ theme }) => ({
   backgroundColor: 'white',
-  color: '#2e7d32',
+  color: '#1a237e',
   borderRadius: '12px',
   textTransform: 'none',
   fontWeight: 600,
@@ -53,7 +33,7 @@ export const DesktopAddButton = styled('button')(({ theme }) => ({
 
 export const AddButton = styled('button')(({ theme }) => ({
   backgroundColor: 'white',
-  color: '#2e7d32',
+  color: '#1a237e',
   borderRadius: '12px',
   textTransform: 'none',
   fontWeight: 600,
@@ -88,13 +68,13 @@ export const StyledFormControl = styled('div')(({ theme }) => ({
       paddingRight: '32px !important'
     },
     '&:hover .MuiOutlinedInput-notchedOutline': {
-      borderColor: '#2e7d32',
-      boxShadow: '0 0 0 3px rgba(46,125,50,0.1)'
+      borderColor: '#1a237e',
+      boxShadow: '0 0 0 3px rgba(26,35,126,0.1)'
     },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-      borderColor: '#2e7d32',
+      borderColor: '#1a237e',
       borderWidth: '2px',
-      boxShadow: '0 0 0 3px rgba(46,125,50,0.1)'
+      boxShadow: '0 0 0 3px rgba(26,35,126,0.1)'
     },
     transition: 'all 0.2s ease'
   },
@@ -104,13 +84,13 @@ export const StyledFormControl = styled('div')(({ theme }) => ({
     transform: 'translate(14px, 10px) scale(1)',
     '&.MuiInputLabel-shrink': {
       transform: 'translate(14px, -6px) scale(0.75)',
-      color: '#2e7d32'
+      color: '#1a237e'
     },
     '&.Mui-focused': {
-      color: '#2e7d32'
+      color: '#1a237e'
     }
   },
   '& .MuiSvgIcon-root': {
-    color: '#2e7d32'
+    color: '#1a237e'
   }
 }))

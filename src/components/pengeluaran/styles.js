@@ -9,7 +9,7 @@ export const StyledCard = styled('div')(({ theme }) => ({
 
 export const DesktopAddButton = styled('button')(({ theme }) => ({
   backgroundColor: 'white',
-  color: '#1a237e',
+  color: '#c62828',
   borderRadius: '12px',
   textTransform: 'none',
   fontWeight: 600,
@@ -33,7 +33,7 @@ export const DesktopAddButton = styled('button')(({ theme }) => ({
 
 export const AddButton = styled('button')(({ theme }) => ({
   backgroundColor: 'white',
-  color: '#1a237e',
+  color: '#c62828',
   borderRadius: '12px',
   textTransform: 'none',
   fontWeight: 600,
@@ -68,11 +68,11 @@ export const StyledFormControl = styled('div')(({ theme }) => ({
       paddingRight: '32px !important'
     },
     '&:hover .MuiOutlinedInput-notchedOutline': {
-      borderColor: '#1a237e',
+      borderColor: '#c62828',
       boxShadow: '0 0 0 3px rgba(26,35,126,0.1)'
     },
     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-      borderColor: '#1a237e',
+      borderColor: '#c62828',
       borderWidth: '2px',
       boxShadow: '0 0 0 3px rgba(26,35,126,0.1)'
     },
@@ -84,13 +84,13 @@ export const StyledFormControl = styled('div')(({ theme }) => ({
     transform: 'translate(14px, 10px) scale(1)',
     '&.MuiInputLabel-shrink': {
       transform: 'translate(14px, -6px) scale(0.75)',
-      color: '#1a237e'
+      color: '#c62828'
     },
     '&.Mui-focused': {
-      color: '#1a237e'
+      color: '#c62828'
     }
   },
   '& .MuiSvgIcon-root': {
-    color: '#1a237e'
+    color: '#c62828'
   }
 }))

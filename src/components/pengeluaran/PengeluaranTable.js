@@ -51,7 +51,7 @@ export default function PengeluaranTable({
           gap: { xs: 2, sm: 0 },
           mb: 3
         }}>
-          <Typography variant="h6" component="div" sx={{ color: '#1a237e' }}>
+          <Typography variant="h6" component="div" sx={{ color: '#c62828' }}>
             Kelola data pengeluaran organisasi dengan mudah
           </Typography>
           <FormControl
@@ -71,11 +71,11 @@ export default function PengeluaranTable({
                   paddingRight: '32px !important'
                 },
                 '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#1a237e',
+                  borderColor: '#c62828',
                   boxShadow: '0 0 0 3px rgba(26,35,126,0.1)'
                 },
                 '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#1a237e',
+                  borderColor: '#c62828',
                   borderWidth: '2px',
                   boxShadow: '0 0 0 3px rgba(26,35,126,0.1)'
                 },
@@ -87,14 +87,14 @@ export default function PengeluaranTable({
                 transform: 'translate(14px, 10px) scale(1)',
                 '&.MuiInputLabel-shrink': {
                   transform: 'translate(14px, -6px) scale(0.75)',
-                  color: '#1a237e'
+                  color: '#c62828'
                 },
                 '&.Mui-focused': {
-                  color: '#1a237e'
+                  color: '#c62828'
                 }
               },
               '& .MuiSvgIcon-root': {
-                color: '#1a237e'
+                color: '#c62828'
               }
             }}
           >
@@ -187,7 +187,7 @@ export default function PengeluaranTable({
                             onClick={() => handleEdit(row)}
                             aria-label={`Edit pengeluaran nomor ${row.id}`}
                             sx={{
-                              color: '#1a237e',
+                              color: '#c62828',
                               width: { xs: '35px', sm: '30px' },
                               height: { xs: '35px', sm: '30px' }
                             }}

@@ -1,13 +1,11 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Fade, Select, InputLabel, Alert } from '@mui/material';
+import { Box, Button, Fade, Select, InputLabel, Alert, MenuItem } from '@mui/material';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { laporanService } from '@/services/laporanService';
-import { pemasukanService } from '@/services/pemasukanService';
-import { pengeluaranService } from '@/services/pengeluaranService';
 import { AnimatedContainer, AnimatedTypography, StyledFormControl } from '@/components/laporanKeuangan/styles';
 import SummaryCards from '@/components/laporanKeuangan/SummaryCards';
 import LaporanTable from '@/components/laporanKeuangan/LaporanTable';
@@ -16,6 +14,7 @@ import DownloadMenu from '@/components/laporanKeuangan/DownloadMenu';
 
 export default function LaporanKeuangan() {
   const [data, setData] = useState([])
+  const [darkMode, setDarkMode] = useState(false)
   const [filteredData, setFilteredData] = useState([])
   const [timeRange, setTimeRange] = useState('all')
   const [loading, setLoading] = useState(true)
@@ -183,13 +182,13 @@ export default function LaporanKeuangan() {
       doc.setFontSize(20)
       doc.setTextColor(25, 118, 210) // MUI primary color (#1976D2)
       doc.setFont('helvetica', 'bold')
-  doc.text('Laporan Keuangan Organisasi COCONUT Computer Club', pageWidth / 2, currentY, { align: 'center' })
+      doc.text('Laporan Keuangan Organisasi COCONUT Computer Club', pageWidth / 2, currentY, { align: 'center' })
       currentY += 10
 
       doc.setFontSize(12)
       doc.setTextColor(0, 0, 0)
       doc.setFont('helvetica', 'normal')
-  doc.text('COCONUT Computer Club', pageWidth / 2, currentY, { align: 'center' })
+      doc.text('COCONUT Computer Club', pageWidth / 2, currentY, { align: 'center' })
       currentY += 8
 
       const periodLabel = timeRangeOptions.find(opt => opt.value === timeRange)?.label || 'Semua'
@@ -315,7 +314,7 @@ export default function LaporanKeuangan() {
         })
       }
 
-  doc.save('laporan-keuangan-coconut.pdf')
+      doc.save('laporan-keuangan-coconut.pdf')
       handleClose()
     } catch (error) {
       console.error('Error generating PDF:', error)
@@ -398,14 +397,41 @@ export default function LaporanKeuangan() {
             </AnimatedTypography>
             <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' }, flexDirection: { xs: 'column', sm: 'row' } }}>
               <StyledFormControl variant="outlined" size="large" sx={{ minWidth: { xs: '100%', sm: '250px' } }}>
-                <InputLabel>Filter Periode</InputLabel>
-                <Select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} label="Filter Periode">
+                <InputLabel sx={{ color: darkMode ? '#90caf9' : undefined }}>Filter Periode</InputLabel>
+                <Select
+                  value={timeRange}
+                  onChange={(e) => setTimeRange(e.target.value)}
+                  label="Filter Periode"
+                  sx={{
+                    background: darkMode ? 'rgba(66,165,245,0.08)' : 'white',
+                    color: darkMode ? '#fff' : '#1976D2',
+                    borderRadius: '12px',
+                    '& .MuiSelect-icon': {
+                      color: darkMode ? '#90caf9' : '#1976D2',
+                    },
+                  }}
+                >
                   {timeRangeOptions.map(option => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
+                    <MenuItem key={option.value} value={option.value} sx={{ py: 1.5, px: 2 }}>{option.label}</MenuItem>
                   ))}
                 </Select>
               </StyledFormControl>
-              <Button variant="outlined" onClick={() => fetchDataByRange(timeRange)} fullWidth={false} sx={{ borderRadius: '12px', minWidth: { xs: '100%', sm: '120px' } }}>
+              <Button
+                variant="outlined"
+                onClick={() => fetchDataByRange(timeRange)}
+                fullWidth={false}
+                sx={theme => ({
+                  borderRadius: '12px',
+                  minWidth: { xs: '100%', sm: '120px' },
+                  color: theme.palette.mode === 'dark' ? '#fff' : '#1976D2',
+                  borderColor: theme.palette.mode === 'dark' ? '#fff' : '#1976D2',
+                  background: theme.palette.mode === 'dark' ? 'rgba(66,165,245,0.08)' : 'transparent',
+                  '&:hover': {
+                    background: theme.palette.mode === 'dark' ? 'rgba(66,165,245,0.18)' : 'rgba(25,118,210,0.08)',
+                    borderColor: theme.palette.mode === 'dark' ? '#90caf9' : '#1976D2',
+                  },
+                })}
+              >
                 Refresh Data
               </Button>
               <Button variant="contained" onClick={handleClick} fullWidth={false} sx={{ minWidth: { xs: '100%', sm: '160px' }, borderRadius: '12px', background: 'linear-gradient(135deg, #1976D2 0%, #2196F3 100%)' }}>

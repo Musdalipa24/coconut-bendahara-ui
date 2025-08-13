@@ -38,7 +38,7 @@ export default function NotaPreviewDialog({
         pt: 3,
         px: 3,
         borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
-        background: 'linear-gradient(135deg, #1a237e 0%, #0d47a1 100%)',
+        background: 'linear-gradient(135deg, #c62828 0%, #b71c1c 100%)',
         color: 'white',
         display: 'flex',
         alignItems: 'center',
@@ -102,9 +102,9 @@ export default function NotaPreviewDialog({
           variant="contained"
           sx={{
             borderRadius: '10px',
-            bgcolor: '#1a237e',
+            bgcolor: '#c62828',
             '&:hover': {
-              bgcolor: '#0d47a1'
+              bgcolor: '#b71c1c'
             },
             px: 3,
             py: 1
