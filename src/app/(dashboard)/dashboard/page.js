@@ -54,7 +54,7 @@ export default function Dashboard() {
           showSnackbar('Format data transaksi tidak valid', 'error')
         }
       } catch (err) {
-        showSnackbar(err.message || 'Gagal mengambil data', 'error')
+        showSnackbar('Gagal mengambil data', 'error')
       } finally {
         setLoading(false)
       }

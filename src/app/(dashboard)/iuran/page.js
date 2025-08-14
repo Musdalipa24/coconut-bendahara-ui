@@ -23,7 +23,6 @@ const dummyAnggota = [
 ];
 
 export default function IuranPage() {
-    const [tab, setTab] = useState(0);
     const [darkMode, setDarkMode] = useState(false);
     const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
     const [totalIuran, setTotalIuran] = useState(0)
@@ -45,18 +44,6 @@ export default function IuranPage() {
         if (reason === 'clickaway') return;
         setSnackbar(prev => ({ ...prev, open: false }));
     };
-
-    const handleAdd = () => {
-        setEditingId(null)
-        setFormData({
-            tanggal: '',
-            nominal: '',
-            keterangan: '',
-            nota: null
-        })
-        setPreviewUrl('')
-        setShowModal(true)
-    }
 
     // Currency formatter
     const formatCurrency = (amount) => {
@@ -112,8 +99,8 @@ export default function IuranPage() {
             <IuranHeader
                 totalIuran={totalIuran}
                 isLoadingTotal={isLoadingTotal}
-                handleAdd={handleAdd}
                 formatCurrency={formatCurrency}
+                showSnackbar={showSnackbar}
             />
 
             <Paper elevation={3} sx={{
@@ -124,26 +111,14 @@ export default function IuranPage() {
                 background: darkMode ? 'rgba(66,165,245,0.08)' : '#fff',
                 transition: 'background 0.3s'
             }}>
-                <Tabs value={tab} onChange={(_, v) => setTab(v)} textColor="primary" indicatorColor="primary" sx={{ mb: 2 }}>
-                    <Tab label="BPH" />
-                    <Tab label="Anggota" />
-                </Tabs>
-                <Box sx={{ display: tab === 0 ? 'block' : 'none' }}>
+                <Box>
                     <IuranTable
                         rows={dummyBPH}
                         darkMode={darkMode}
                         formatCurrency={formatCurrency}
                         onEdit={null}
                         onDelete={null}
-                    />
-                </Box>
-                <Box sx={{ display: tab === 1 ? 'block' : 'none' }}>
-                    <IuranTable
-                        rows={dummyAnggota}
-                        darkMode={darkMode}
-                        formatCurrency={formatCurrency}
-                        onEdit={null}
-                        onDelete={null}
+                        showSnackbar={showSnackbar}
                     />
                 </Box>
             </Paper>

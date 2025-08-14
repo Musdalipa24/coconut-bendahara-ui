@@ -1,68 +1,68 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Box, Typography, Button, Dialog, DialogTitle, DialogContent, FormControl, InputLabel, Select, MenuItem, RadioGroup, FormControlLabel, Radio, DialogActions } from '@mui/material'
+import {
+  Box, Typography, Button, Dialog, DialogTitle, DialogContent,
+  FormControl, InputLabel, Select, MenuItem, TextField,
+  DialogActions, CircularProgress
+} from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
-import { DesktopAddButton, AddButton } from './styles'
+import { DesktopAddButton } from './styles'
+import { iuranService } from '@/services/iuranService'
 
 export default function IuranHeader({
   totalIuran,
   isLoadingTotal,
-  handleAdd,
-  formatCurrency
+  formatCurrency,
+  showSnackbar
 }) {
   const [openIuranDialog, setOpenIuranDialog] = useState(false);
   const [status, setStatus] = useState('bph');
+  const [nra, setNra] = useState('');
   const [nama, setNama] = useState('');
-  const [lunas, setLunas] = useState('lunas');
-  const [jumlahBayar, setJumlahBayar] = useState('');
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
 
   const handleOpenIuranDialog = () => {
     setOpenIuranDialog(true);
     setStatus('bph');
+    setNra('');
     setNama('');
-    setLunas('lunas');
-    setJumlahBayar('');
   };
+
   const handleCloseIuranDialog = () => {
     setOpenIuranDialog(false);
   };
-  const handleSubmitIuran = (e) => {
+
+  const handleSubmitIuran = async (e) => {
     e.preventDefault();
-    // TODO: submit logic
-    setOpenIuranDialog(false);
+    setLoadingSubmit(true);
+
+    try {
+      const newMember = { status, nra, nama };
+      const response = await iuranService.addMember(newMember);
+
+      if (response?.code === 200) {
+        if (typeof showSnackbar === 'function') {
+          showSnackbar('Member berhasil ditambahkan', 'success');
+        }
+
+        handleCloseIuranDialog();
+      } else {
+        console.error('Gagal menambah member:', response);
+        if (typeof showSnackbar === 'function') {
+          showSnackbar(response.message || 'Gagal menambah member', 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Error saat tambah member:', error);
+      if (typeof showSnackbar === 'function') {
+        showSnackbar(error.message || 'Terjadi kesalahan', 'error');
+      }
+    } finally {
+      setLoadingSubmit(false);
+    }
   };
 
-  const namaBPH = [
-    'Syahrul',
-    'Aksan',
-    'Faisal',
-    'Ipa',
-    'Citra',
-    'Parwati',
-    'Kiki',
-    'Syarif',
-    'Yusuf',
-    'Windu',
-    'Amel',
-    'Salsa',
-    'Fikri'
-  ];
-  const namaAnggota = [
-    'Morgan',
-    'Kaisya',
-    'Lisa',
-    'Bayyin',
-    'Saudah',
-    'Nawat',
-    'Naufal',
-    'Tege',
-    'Dika',
-    'Fajrul',
-    'Udin',
-    'Syah',
-    'Dedes'
-  ];
 
   return (
     <>
@@ -94,60 +94,57 @@ export default function IuranHeader({
           Tambah Member
         </DesktopAddButton>
 
-        {/* Dialog Iuran Mingguan */}
+        {/* Dialog Input Member */}
         <Dialog open={openIuranDialog} onClose={handleCloseIuranDialog} maxWidth="xs" fullWidth>
-          <DialogTitle sx={{ bgcolor: '#1a237e', color: 'white' }}>Input Iuran Mingguan</DialogTitle>
+          <DialogTitle sx={{ bgcolor: '#1a237e', color: 'white' }}>Tambah Member</DialogTitle>
           <DialogContent sx={{ bgcolor: '#f5fff7' }}>
             <Box component="form" onSubmit={handleSubmitIuran} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+
+              {/* Pilihan Status */}
               <FormControl fullWidth>
                 <InputLabel sx={{ color: '#1a237e' }}>Status</InputLabel>
                 <Select
-                  label="Status"
                   value={status}
-                  onChange={e => { setStatus(e.target.value); setNama(''); }}
+                  onChange={e => setStatus(e.target.value)}
                   sx={{ bgcolor: 'white', color: '#1a237e', fontWeight: 600 }}
                 >
                   <MenuItem value="bph">BPH</MenuItem>
                   <MenuItem value="anggota">Anggota</MenuItem>
                 </Select>
               </FormControl>
-              <FormControl fullWidth>
-                <InputLabel sx={{ color: '#1a237e' }}>Nama</InputLabel>
-                <Select
-                  label="Nama"
-                  value={nama}
-                  onChange={e => setNama(e.target.value)}
-                  sx={{ bgcolor: 'white', color: '#1a237e', fontWeight: 600 }}
-                >
-                  {(status === 'bph' ? namaBPH : namaAnggota).map(n => (
-                    <MenuItem key={n} value={n}>{n}</MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <RadioGroup
-                row
-                value={lunas}
-                onChange={e => setLunas(e.target.value)}
-                sx={{ color: '#1a237e' }}
-              >
-                <FormControlLabel value="lunas" control={<Radio sx={{ color: '#1a237e' }} />} label="Lunas" />
-                <FormControlLabel value="belum" control={<Radio sx={{ color: '#1a237e' }} />} label="Belum Lunas" />
-              </RadioGroup>
-              {lunas === 'belum' && (
-                <TextField
-                  label="Jumlah yang dibayar"
-                  type="number"
-                  value={jumlahBayar}
-                  onChange={e => setJumlahBayar(e.target.value)}
-                  fullWidth
-                  required
-                  sx={{ bgcolor: 'white', color: '#1a237e' }}
-                  InputLabelProps={{ style: { color: '#1a237e' } }}
-                />
-              )}
+
+              {/* Input NRA */}
+              <TextField
+                label="NRA"
+                value={nra}
+                onChange={e => setNra(e.target.value)}
+                fullWidth
+                required
+                sx={{ bgcolor: 'white' }}
+                InputLabelProps={{ style: { color: '#1a237e' } }}
+              />
+
+              {/* Input Nama */}
+              <TextField
+                label="Nama"
+                value={nama}
+                onChange={e => setNama(e.target.value)}
+                fullWidth
+                required
+                sx={{ bgcolor: 'white' }}
+                InputLabelProps={{ style: { color: '#1a237e' } }}
+              />
+
               <DialogActions sx={{ px: 0, bgcolor: '#f5fff7' }}>
                 <Button onClick={handleCloseIuranDialog} sx={{ color: '#1a237e', fontWeight: 600 }}>Batal</Button>
-                <Button type="submit" variant="contained" sx={{ bgcolor: '#1a237e', color: 'white', fontWeight: 600, '&:hover': { bgcolor: '#1b5e20' } }}>Simpan</Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  sx={{ bgcolor: '#1a237e', color: 'white', fontWeight: 600, '&:hover': { bgcolor: '#1b5e20' } }}
+                  disabled={loadingSubmit}
+                >
+                  {loadingSubmit ? <CircularProgress size={24} color="inherit" /> : 'Simpan'}
+                </Button>
               </DialogActions>
             </Box>
           </DialogContent>
