@@ -1,6 +1,6 @@
 'use client'
 import { Box } from '@mui/material'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import DashboardAppBar from './AppBar'
 import DashboardDrawer from './Drawer'
 import DashboardFooter from './Footer'
@@ -8,6 +8,7 @@ import LoginDialog from './LoginDialog'
 import PasswordDialog from './PasswordDialog'
 import { useSoftUIController } from '@/context'
 import { colors } from '@/styles/colors'
+import Cookies from 'js-cookie'
 
 export default function DashboardLayout({ children }) {
   const [controller] = useSoftUIController()
@@ -15,9 +16,19 @@ export default function DashboardLayout({ children }) {
   const [darkMode, setDarkMode] = useState(false)
   const [openLoginDialog, setOpenLoginDialog] = useState(false)
   const [openPasswordDialog, setOpenPasswordDialog] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   const toggleDarkMode = () => setDarkMode(!darkMode)
-  
+
+  useEffect(() => {
+    const token = Cookies.get('authToken')
+    if (!token) {
+      setOpenLoginDialog(true) // Buka login dialog
+    } else {
+      setIsAuthenticated(true) // Sudah login
+    }
+  }, [])
+
   return (
     <Box sx={{
       display: 'flex',
@@ -40,13 +51,23 @@ export default function DashboardLayout({ children }) {
         ml: { xs: 0, sm: miniSidenav ? '80px' : '280px' },
         width: { xs: '100%', sm: `calc(100% - ${miniSidenav ? '80px' : '280px'})` },
       }}>
-        {children}
         
+        {/* Tampilkan children hanya kalau sudah login */}
+        {isAuthenticated && children}
+
+        {/* Dialog login */}
         <LoginDialog 
           open={openLoginDialog} 
-          setOpen={setOpenLoginDialog}
+          setOpen={(val) => {
+            setOpenLoginDialog(val)
+            if (!val) {
+              const token = Cookies.get('authToken')
+              if (token) setIsAuthenticated(true)
+            }
+          }}
         />
         
+        {/* Dialog ganti password */}
         <PasswordDialog 
           open={openPasswordDialog}
           setOpen={setOpenPasswordDialog}

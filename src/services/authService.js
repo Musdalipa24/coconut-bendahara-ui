@@ -1,11 +1,19 @@
-import { API_BASE_URL, API_ENDPOINTS, getHeaders } from '@/config/api';
 import Cookies from 'js-cookie';
+
+function parseJwt(token) {
+    try {
+        return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+        console.error('Invalid token', e);
+        return null;
+    }
+}
 
 export const authService = {
     login: async (username, password) => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
-            const response = await fetch(`${apiUrl}/login`, {
+            const response = await fetch(`${apiUrl}/api/admin/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -13,47 +21,76 @@ export const authService = {
                 },
                 body: JSON.stringify({ username, password })
             });
+
             const responseData = await response.json();
-            if (!response.ok || !responseData.success) {
+
+            if (!response.ok || responseData.code !== 200) {
                 return {
                     success: false,
-                    error: responseData.error || responseData.message || 'Login gagal'
+                    error: responseData.message || 'Login gagal'
                 };
             }
-            // Jika login berhasil
-            const user = responseData.user || responseData.data?.user || { username };
-            const token = responseData.token || responseData.data?.token;
+
+            const token = responseData.data;
             if (token) {
-                Cookies.set('authToken', token, { expires: 1 });
+                Cookies.set('authToken', token, { expires: 7 });
             }
-            localStorage.setItem('user', JSON.stringify(user));
-            return {
-                success: true,
-                data: {
-                    token,
-                    user
-                }
-            };
+
+            return { success: true, data: { token } };
         } catch (error) {
             console.error('Login error:', error);
-            return {
-                success: false,
-                error: 'Terjadi kesalahan saat login. Silakan coba lagi.'
-            };
+            return { success: false, error: 'Terjadi kesalahan saat login. Silakan coba lagi.' };
         }
     },
 
-    // validateToken: async (token) => {
-    //     try {
-    //         const response = await fetch(API_ENDPOINTS.ADMIN_LOGIN, {
-    //             method: 'GET',
-    //             headers: getHeaders(token)
-    //         });
+    getUsernameFromToken: () => {
+        const token = Cookies.get('authToken');
+        if (!token) return null;
+        const decoded = parseJwt(token);
+        return decoded?.username || null;
+    },
 
-    //         return response.ok;
-    //     } catch (error) {
-    //         console.error('Validate token error:', error);
-    //         return false;
-    //     }
-    // }
-}; 
+    updatePassword: async (oldPassword, newPassword) => {
+        try {
+            const apiUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+            const token = Cookies.get('authToken');
+            if (!token) return { success: false, error: 'Token tidak ditemukan. Silakan login ulang.' };
+
+            const username = authService.getUsernameFromToken();
+            if (!username) return { success: false, error: 'Username tidak ditemukan di token' };
+
+            const response = await fetch(`${apiUrl}/api/admin/update/${encodeURIComponent(username)}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    old_password: oldPassword,
+                    password: newPassword
+                })
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok || responseData.code !== 200) {
+                return {
+                    success: false,
+                    error: responseData.message || 'Gagal update password'
+                };
+            }
+
+            Cookies.remove('authToken');
+
+            return {
+                success: true,
+                data: responseData.data,
+                message: responseData.message || 'Password berhasil diubah. Silakan login kembali.'
+            };
+        } catch (error) {
+            console.error('Update password error:', error);
+            return { success: false, error: 'Terjadi kesalahan saat update password. Silakan coba lagi.' };
+        }
+    }
+};
