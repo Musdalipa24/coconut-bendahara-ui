@@ -1,19 +1,13 @@
 import { getHeaders } from '@/config/api'
 import Cookies from 'js-cookie'
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8087'
+
 export const laporanService = {
     getAllLaporan: async () => {
         try {
-            // const token = Cookies.get('authToken')
-            // if (!token) {
-            //     throw new Error('Token tidak ditemukan')
-            // }
-            const response = await fetch(`/api/laporan/getall`, {
+            const response = await fetch(`${API_BASE_URL}/api/laporan/getall`, {
                 method: 'GET',
-                headers: {
-                    // ...getHeaders(token),
-                    ...(process.env.NODE_ENV === 'development' && { 'ngrok-skip-browser-warning': 'true' })
-                },
                 credentials: 'include'
             })
             if (!response.ok) {
@@ -36,16 +30,8 @@ export const laporanService = {
 
     getSaldo: async () => {
         try {
-            // const token = Cookies.get('authToken')
-            // if (!token) {
-            //     throw new Error('Token tidak ditemukan')
-            // }
-            const response = await fetch(`/api/laporan/saldo`, {
+            const response = await fetch(`${API_BASE_URL}/api/laporan/saldo`, {
                 method: 'GET',
-                headers: {
-                    // ...getHeaders(token),
-                    ...(process.env.NODE_ENV === 'development' && { 'ngrok-skip-browser-warning': 'true' })
-                },
                 credentials: 'include'
             })
             if (!response.ok) {
@@ -59,7 +45,6 @@ export const laporanService = {
                 throw new Error(errorMessage)
             }
             const result = await response.json()
-            // Tangani berbagai format respons
             const saldo = result.data ?? result.saldo ?? result.total ?? 0
             if (!Number.isFinite(Number(saldo))) {
                 console.warn('Saldo tidak valid:', saldo)
@@ -74,16 +59,8 @@ export const laporanService = {
 
     getTotalPengeluaran: async () => {
         try {
-            // const token = Cookies.get('authToken')
-            // if (!token) {
-            //     throw new Error('Token tidak ditemukan')
-            // }
-            const response = await fetch(`/api/laporan/pengeluaran`, {
+            const response = await fetch(`${API_BASE_URL}/api/laporan/pengeluaran`, {
                 method: 'GET',
-                headers: {
-                    // ...getHeaders(token),
-                    ...(process.env.NODE_ENV === 'development' && { 'ngrok-skip-browser-warning': 'true' })
-                },
                 credentials: 'include'
             })
             if (!response.ok) {
@@ -106,16 +83,8 @@ export const laporanService = {
 
     getTotalPemasukan: async () => {
         try {
-            // const token = Cookies.get('authToken')
-            // if (!token) {
-            //     throw new Error('Token tidak ditemukan')
-            // }
-            const response = await fetch(`/api/laporan/pemasukan`, {
+            const response = await fetch(`${API_BASE_URL}/api/laporan/pemasukan`, {
                 method: 'GET',
-                headers: {
-                    // ...getHeaders(token),
-                    ...(process.env.NODE_ENV === 'development' && { 'ngrok-skip-browser-warning': 'true' })
-                },
                 credentials: 'include'
             })
             if (!response.ok) {
@@ -138,18 +107,10 @@ export const laporanService = {
 
     getLaporanByDateRange: async (startDate, endDate) => {
         try {
-            // const token = Cookies.get('authToken')
-            // if (!token) {
-            //     throw new Error('Token tidak ditemukan')
-            // }
             const response = await fetch(
-                `/api/laporan/range?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`,
+                `${API_BASE_URL}/api/laporan/range?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`,
                 {
                     method: 'GET',
-                    headers: {
-                        // ...getHeaders(token),
-                        ...(process.env.NODE_ENV === 'development' && { 'ngrok-skip-browser-warning': 'true' })
-                    },
                     credentials: 'include'
                 }
             )

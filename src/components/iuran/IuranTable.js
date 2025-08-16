@@ -30,8 +30,11 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
         minggu_ke: '',
         tanggal_bayar: '',
         status: '',
-        pembayaran_sementara: ''
+        jumlah_bayar: ''
     });
+
+    const [openConfirmDelete, setOpenConfirmDelete] = useState(false); // New state for confirmation dialog
+    const [memberToDelete, setMemberToDelete] = useState(null); // Store the member to delete
 
     useEffect(() => {
         const fetchMembers = async () => {
@@ -65,7 +68,7 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
             minggu_ke: '',
             tanggal_bayar: '',
             status: '',
-            pembayaran_sementara: ''
+            jumlah_bayar: ''
         });
         setOpenEditDialog(true);
     };
@@ -76,7 +79,8 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
                 periode: value ? value.format('YYYY-MM') : '',
                 minggu_ke: Number(editData.minggu_ke),
                 tanggal_bayar: editData.tanggal_bayar,
-                status: editData.status
+                status: editData.status,
+                jumlah_bayar: editData.jumlah_bayar ? Number(editData.jumlah_bayar) : 0
             });
             // refresh data
             const membersData = await iuranService.getAllMember();
@@ -96,6 +100,34 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
     const handleChangeEdit = (e) => {
         const { name, value } = e.target;
         setEditData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleDelete = (row) => {
+        setMemberToDelete(row); // Set the member to delete
+        setOpenConfirmDelete(true); // Open confirmation dialog
+    };
+
+    const handleConfirmDelete = async () => {
+        if (memberToDelete) {
+            try {
+                await iuranService.deleteMember(memberToDelete.id_member);
+                // Refresh data after deletion
+                const membersData = await iuranService.getAllMember();
+                setMembers(Array.isArray(membersData) ? membersData : []);
+                showSnackbar('Member berhasil dihapus', 'success');
+            } catch (error) {
+                console.error('Error deleting member:', error);
+                showSnackbar('Gagal menghapus member: ' + (error.message || 'Unknown error'), 'error');
+            } finally {
+                setOpenConfirmDelete(false); // Close dialog after action
+                setMemberToDelete(null); // Clear the member to delete
+            }
+        }
+    };
+
+    const handleCancelDelete = () => {
+        setOpenConfirmDelete(false); // Close dialog without deleting
+        setMemberToDelete(null); // Clear the member to delete
     };
 
     const groupByPeriode = (data) => {
@@ -129,7 +161,7 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
                     </TableCell>
                     <TableCell>
                         <IconButton color="primary" onClick={() => handleOpenEdit(row)}><EditIcon /></IconButton>
-                        <IconButton color="error" onClick={() => onDelete && onDelete(row)}><DeleteIcon /></IconButton>
+                        <IconButton color="error" onClick={() => handleDelete(row)}><DeleteIcon /></IconButton>
                     </TableCell>
                 </TableRow>
             ))
@@ -233,14 +265,14 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
                         onChange={handleChangeEdit}
                     >
                         <MenuItem value="lunas">Lunas</MenuItem>
-                        <MenuItem value="belum lunas">Belum Lunas</MenuItem>
+                        <MenuItem value="belum">Belum Lunas</MenuItem>
                     </TextField>
-                    {editData.status === 'belum lunas' && (
+                    {editData.status === 'belum' && (
                         <TextField
                             label="Pembayaran Sementara"
-                            name="pembayaran_sementara"
+                            name="jumlah_bayar"
                             type="number"
-                            value={editData.pembayaran_sementara}
+                            value={editData.jumlah_bayar}
                             onChange={handleChangeEdit}
                         />
                     )}
@@ -248,6 +280,24 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
                 <DialogActions>
                     <Button onClick={handleCloseEdit}>Batal</Button>
                     <Button variant="contained" color="primary" onClick={handleSaveEdit}>Simpan</Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog Confirm Delete */}
+            <Dialog open={openConfirmDelete} onClose={handleCancelDelete} maxWidth="xs">
+                <DialogTitle>Konfirmasi Hapus</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Apakah Anda yakin ingin menghapus member "{memberToDelete?.nama || 'ini'}"? Aksi ini tidak dapat dibatalkan.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCancelDelete} color="primary">
+                        Batal
+                    </Button>
+                    <Button onClick={handleConfirmDelete} color="error" variant="contained">
+                        Hapus
+                    </Button>
                 </DialogActions>
             </Dialog>
         </>

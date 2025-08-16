@@ -81,9 +81,9 @@ export default function IuranHeader({
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
             Data Iuran
           </Typography>
-          <Typography variant="subtitle1" sx={{ opacity: 0.8 }}>
+          {/* <Typography variant="subtitle1" sx={{ opacity: 0.8 }}>
             Total Iuran: {isLoadingTotal ? 'Memuat...' : formatCurrency(totalIuran)}
-          </Typography>
+          </Typography> */}
         </Box>
         <DesktopAddButton
           variant="contained"

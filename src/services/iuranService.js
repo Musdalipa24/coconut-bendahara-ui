@@ -52,10 +52,27 @@ export const iuranService = {
         throw new Error(result.message || 'Network response was not ok');
       }
 
-      return result; // format sama seperti response yang kamu kasih
+      return result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  async deleteMember(id_member) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/member/delete/${id_member}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.message || 'Network response was not ok');
+      }
+
+      // No response body expected for 204 status
+      return;
     } catch (error) {
       throw error;
     }
   }
-
 };

@@ -16,6 +16,8 @@ const formatDateForBackend = (dateString) => {
     return `${year}-${month}-${day} ${hours}:${minutes}`;
 };
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8087'; // Fallback jika env tidak ditemukan
+
 export const pemasukanService = {
     /**
      * Add new income record
@@ -24,10 +26,6 @@ export const pemasukanService = {
      */
     async addPemasukan(data) {
         try {
-            // const token = Cookies.get('authToken');
-            // if (!token) throw new Error('Token tidak ditemukan');
-
-            // Prepare payload with properly formatted date
             const payload = {
                 tanggal: formatDateForBackend(data.tanggal), // Formatted for backend
                 nominal: Number(data.nominal.toString().replace(/\D/g, '')),
@@ -35,11 +33,10 @@ export const pemasukanService = {
                 keterangan: data.keterangan.trim()
             };
 
-            const response = await fetch('/api/pemasukan/add', {
+            const response = await fetch(`${API_BASE_URL}/api/pemasukan/add`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    // 'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify(payload),
             });
@@ -69,21 +66,17 @@ export const pemasukanService = {
      */
     async updatePemasukan(id, data) {
         try {
-            // const token = Cookies.get('authToken');
-            // if (!token) throw new Error('Token tidak ditemukan');
-
             const payload = {
-                tanggal: formatDateForBackend(data.tanggal), // Gunakan format yang sama dengan addPemasukan
+                tanggal: formatDateForBackend(data.tanggal),
                 nominal: Number(data.nominal.toString().replace(/\D/g, '')),
                 kategori: data.kategori.trim(),
                 keterangan: data.keterangan.trim()
             };
 
-            const response = await fetch(`/api/pemasukan/update/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/pemasukan/update/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    // 'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify(payload),
             });
@@ -112,21 +105,12 @@ export const pemasukanService = {
      */
     deletePemasukan: async (id) => {
         try {
-            // const token = Cookies.get('authToken');
-            // if (!token) {
-            //     throw new Error('Token tidak ditemukan');
-            // }
-
             if (!id) {
                 throw new Error('ID tidak valid');
             }
 
-            const response = await fetch(`/api/pemasukan/delete/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/pemasukan/delete/${id}`, {
                 method: 'DELETE',
-                headers: {
-                    // ...getHeaders(token),
-                    'ngrok-skip-browser-warning': 'true'
-                },
                 credentials: 'include'
             });
 
@@ -148,17 +132,8 @@ export const pemasukanService = {
      */
     getAllPemasukan: async (page, pageSize) => {
         try {
-            // const token = Cookies.get('authToken');
-            // if (!token) {
-            //     throw new Error('Token tidak ditemukan');
-            // }
-
-            const response = await fetch(`/api/pemasukan/getall?page=${page}&page_size=${pageSize}`, {
+            const response = await fetch(`${API_BASE_URL}/api/pemasukan/getall?page=${page}&page_size=${pageSize}`, {
                 method: 'GET',
-                headers: {
-                    // ...getHeaders(token),
-                    'ngrok-skip-browser-warning': 'true'
-                },
                 credentials: 'include'
             });
 
@@ -167,7 +142,7 @@ export const pemasukanService = {
                 throw new Error(errorData.message || 'Gagal mengambil data pemasukan');
             }
 
-            return await response.json(); // Kembalikan seluruh response termasuk metadata pagination
+            return await response.json();
         } catch (error) {
             console.error('Error in getAllPemasukan:', error);
             throw error;
@@ -181,21 +156,12 @@ export const pemasukanService = {
      */
     getPemasukanById: async (id) => {
         try {
-            // const token = Cookies.get('authToken');
-            // if (!token) {
-            //     throw new Error('Token tidak ditemukan');
-            // }
-
             if (!id) {
                 throw new Error('ID tidak valid');
             }
 
-            const response = await fetch(`/api/pemasukan/get/${id}`, {
+            const response = await fetch(`${API_BASE_URL}/api/pemasukan/get/${id}`, {
                 method: 'GET',
-                headers: {
-                    // ...getHeaders(token),
-                    'ngrok-skip-browser-warning': 'true'
-                },
                 credentials: 'include'
             });
 
