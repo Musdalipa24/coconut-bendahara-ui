@@ -16,9 +16,8 @@ import {
   DeleteConfirmationDialog,
   NotaPreviewDialog
 } from '@/components/pengeluaran'
-import { pengeluaranService } from '@/services/pengeluaranService'
+import { pengeluaranService, UPLOAD_URL } from '@/services/pengeluaranService'
 import { laporanService } from '@/services/laporanService'
-import { UPLOAD_URL } from '@/config/api'
 
 export default function Pengeluaran() {
   // State management
@@ -140,6 +139,7 @@ export default function Pengeluaran() {
       let response
       if (!start || !end) {
         response = await pengeluaranService.getAllPengeluaran(page + 1, rowsPerPage)
+        console.log("Getall pengeluaran", response)
       } else {
         response = await pengeluaranService.getPengeluaranByDateRange(start, end, page + 1, rowsPerPage)
       }

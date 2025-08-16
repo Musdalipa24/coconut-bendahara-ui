@@ -288,7 +288,7 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
                 <DialogTitle>Konfirmasi Hapus</DialogTitle>
                 <DialogContent>
                     <Typography>
-                        Apakah Anda yakin ingin menghapus member "{memberToDelete?.nama || 'ini'}"? Aksi ini tidak dapat dibatalkan.
+                        Apakah Anda yakin ingin menghapus member <strong>{memberToDelete?.nama || 'ini'}</strong>? Aksi ini tidak dapat dibatalkan.
                     </Typography>
                 </DialogContent>
                 <DialogActions>

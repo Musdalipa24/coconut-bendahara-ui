@@ -41,7 +41,7 @@ export default function IuranHeader({
       const newMember = { status, nra, nama };
       const response = await iuranService.addMember(newMember);
 
-      if (response?.code === 200) {
+      if (response?.code >= 200 && response?.code < 300) {
         if (typeof showSnackbar === 'function') {
           showSnackbar('Member berhasil ditambahkan', 'success');
         }

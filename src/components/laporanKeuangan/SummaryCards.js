@@ -6,7 +6,7 @@ import { TrendingUp as TrendingUpIcon, TrendingDown as TrendingDownIcon, Account
 export default function SummaryCards({ totalPemasukan, totalPengeluaran, saldoAkhir, isLoadingSummary, formatRupiah }) {
   return (
     <Grid container spacing={3} mb={4} justifyContent="space-between" alignItems="center">
-      <Grid item xs={12} sm={4} minWidth={{ xs: '100%', sm: '360px' }}>
+      <Grid item xs={12} sm={4} minWidth={{ xs: '100%', sm: '350px' }}>
         <StyledCard variant="income" delay={0.2} sx={{ p: { xs: 2, sm: 3 }, minHeight: { xs: '120px', sm: '140px' } }}>
           <IconWrapper>
             <TrendingUpIcon sx={{ fontSize: { xs: 36, sm: 48 } }} />
@@ -19,7 +19,7 @@ export default function SummaryCards({ totalPemasukan, totalPengeluaran, saldoAk
           </Typography>
         </StyledCard>
       </Grid>
-      <Grid item xs={12} sm={4} minWidth={{ xs: '100%', sm: '360px' }}>
+      <Grid item xs={12} sm={4} minWidth={{ xs: '100%', sm: '350px' }}>
         <StyledCard variant="expense" delay={0.4} sx={{ p: { xs: 2, sm: 3 }, minHeight: { xs: '120px', sm: '140px' } }}>
           <IconWrapper>
             <TrendingDownIcon sx={{ fontSize: { xs: 36, sm: 48 } }} />
@@ -32,7 +32,7 @@ export default function SummaryCards({ totalPemasukan, totalPengeluaran, saldoAk
           </Typography>
         </StyledCard>
       </Grid>
-      <Grid item xs={12} sm={4} minWidth={{ xs: '100%', sm: '360px' }}>
+      <Grid item xs={12} sm={4} minWidth={{ xs: '100%', sm: '350px' }}>
         <StyledCard delay={0.6} sx={{ p: { xs: 2, sm: 3 }, minHeight: { xs: '120px', sm: '140px' } }}>
           <IconWrapper>
             <AccountBalanceIcon sx={{ fontSize: { xs: 36, sm: 48 } }} />

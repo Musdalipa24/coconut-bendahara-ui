@@ -1,6 +1,3 @@
-import { getHeaders } from '@/config/api';
-import Cookies from 'js-cookie';
-
 // Fungsi untuk memformat tanggal dari YYYY-MM-DDTHH:mm ke YYYY-MM-DD HH:mm
 const formatDateForBackend = (dateString) => {
     const date = new Date(dateString);
@@ -218,3 +215,5 @@ export const pengeluaranService = {
         }
     }
 };
+
+export const UPLOAD_URL = `${API_BASE_URL}/api/uploads/`;
