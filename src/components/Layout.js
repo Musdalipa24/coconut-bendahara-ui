@@ -10,6 +10,24 @@ import { useSoftUIController } from '@/context'
 import { colors } from '@/styles/colors'
 import Cookies from 'js-cookie'
 
+// 🧠 Tambahan untuk parsing & cek expired
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {
+    console.error('Invalid token', e);
+    return null;
+  }
+}
+
+function isTokenExpired(token) {
+  const decoded = parseJwt(token);
+  if (!decoded || !decoded.exp) return true;
+
+  const currentTime = Math.floor(Date.now() / 1000);
+  return decoded.exp < currentTime;
+}
+
 export default function DashboardLayout({ children }) {
   const [controller] = useSoftUIController()
   const { miniSidenav } = controller
@@ -22,10 +40,12 @@ export default function DashboardLayout({ children }) {
 
   useEffect(() => {
     const token = Cookies.get('authToken')
-    if (!token) {
-      setOpenLoginDialog(true) // Buka login dialog
+    if (!token || isTokenExpired(token)) {
+      Cookies.remove('authToken')
+      setOpenLoginDialog(true)
+      setIsAuthenticated(false)
     } else {
-      setIsAuthenticated(true) // Sudah login
+      setIsAuthenticated(true)
     }
   }, [])
 
@@ -52,22 +72,21 @@ export default function DashboardLayout({ children }) {
         width: { xs: '100%', sm: `calc(100% - ${miniSidenav ? '80px' : '280px'})` },
       }}>
         
-        {/* Tampilkan children hanya kalau sudah login */}
         {isAuthenticated && children}
 
-        {/* Dialog login */}
         <LoginDialog 
           open={openLoginDialog} 
           setOpen={(val) => {
             setOpenLoginDialog(val)
             if (!val) {
               const token = Cookies.get('authToken')
-              if (token) setIsAuthenticated(true)
+              if (token && !isTokenExpired(token)) {
+                setIsAuthenticated(true)
+              }
             }
           }}
         />
         
-        {/* Dialog ganti password */}
         <PasswordDialog 
           open={openPasswordDialog}
           setOpen={setOpenPasswordDialog}

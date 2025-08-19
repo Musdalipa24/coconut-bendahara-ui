@@ -13,10 +13,26 @@ import WelcomeCard from '@/components/dashboard/WelcomeCard'
 import StatCard from '@/components/dashboard/StatCard'
 import TransactionHistory from '@/components/dashboard/TransactionHistory'
 import BiodataDialog from '@/components/dashboard/BiodataDialog'
+import { motion } from 'framer-motion'
 
 const theme = createTheme({
   typography: { fontFamily: '"Poppins", sans-serif' },
 })
+
+const containerVariants = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.2, // Delay antar elemen
+    },
+  },
+}
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+}
+
 
 export default function Dashboard() {
   const [openBiodata, setOpenBiodata] = useState(false)
@@ -80,74 +96,104 @@ export default function Dashboard() {
 
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, padding: { xs: '16px', sm: '24px', md: '32px' } }}>
-        {/* Snackbar */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={3000}
-          onClose={handleCloseSnackbar}
-          TransitionComponent={Slide}
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        >
-          <Alert
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
+      >
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4, padding: { xs: '16px', sm: '24px', md: '32px' } }}>
+          {/* Snackbar */}
+          <Snackbar
+            open={snackbar.open}
+            autoHideDuration={3000}
             onClose={handleCloseSnackbar}
-            severity={snackbar.severity}
-            sx={{
-              width: '100%',
-              borderRadius: '12px',
-              boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-              fontWeight: 500,
-              bgcolor:
-                snackbar.severity === 'error'
-                  ? '#ffebee'
-                  : snackbar.severity === 'warning'
-                  ? '#fff3e0'
-                  : '#e8f5e9',
-            }}
-            action={
-              <IconButton size="small" onClick={handleCloseSnackbar}>
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            }
+            TransitionComponent={Slide}
+            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
           >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
+            <Alert
+              onClose={handleCloseSnackbar}
+              severity={snackbar.severity}
+              sx={{
+                width: '100%',
+                borderRadius: '12px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                fontWeight: 500,
+                bgcolor:
+                  snackbar.severity === 'error'
+                    ? '#ffebee'
+                    : snackbar.severity === 'warning'
+                      ? '#fff3e0'
+                      : '#e8f5e9',
+              }}
+              action={
+                <IconButton size="small" onClick={handleCloseSnackbar}>
+                  <CloseIcon fontSize="small" />
+                </IconButton>
+              }
+            >
+              {snackbar.message}
+            </Alert>
+          </Snackbar>
 
-        {/* Cards */}
-        <WelcomeCard
-          totalSaldo={loading ? 'Memuat...' : formatCurrency(totalSaldo)}
-          onOpenBiodata={() => setOpenBiodata(true)}
-        />
+          {/* Cards */}
+          <motion.div variants={cardVariants}>
+            <WelcomeCard
+              totalSaldo={loading ? 'Memuat...' : formatCurrency(totalSaldo)}
+              onOpenBiodata={() => setOpenBiodata(true)}
+            />
+          </motion.div>
 
-        <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-          <StatCard
-            variant="green"
-            icon={<TrendingUpIcon sx={{ fontSize: '120px' }} />}
-            title="Total Pemasukan Organisasi"
-            value={loading ? 'Memuat...' : formatCurrency(totalPemasukan)}
-          />
-          <StatCard
-            variant="red"
-            icon={<TrendingDownIcon sx={{ fontSize: '120px' }} />}
-            title="Total Pengeluaran Organisasi"
-            value={loading ? 'Memuat...' : formatCurrency(totalPengeluaran)}
-          />
+
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: 24,
+              flexWrap: 'wrap',
+              width: '100%',
+            }}
+          >
+            <motion.div variants={cardVariants} style={{ flex: 1, minWidth: '280px' }}>
+              <StatCard
+                variant="green"
+                icon={<TrendingUpIcon sx={{ fontSize: '120px' }} />}
+                title="Total Pemasukan Organisasi"
+                value={loading ? 'Memuat...' : formatCurrency(totalPemasukan)}
+              />
+            </motion.div>
+
+            <motion.div variants={cardVariants} style={{ flex: 1, minWidth: '280px' }}>
+              <StatCard
+                variant="red"
+                icon={<TrendingDownIcon sx={{ fontSize: '120px' }} />}
+                title="Total Pengeluaran Organisasi"
+                value={loading ? 'Memuat...' : formatCurrency(totalPengeluaran)}
+              />
+            </motion.div>
+          </motion.div>
+
+
+
+          {/* Transaction History */}
+          <motion.div variants={cardVariants}>
+            <TransactionHistory
+              transactions={filteredTransactions}
+              loading={loading}
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              formatCurrency={formatCurrency}
+              emptyIcon={<AccountBalanceIcon style={{ fontSize: 48, color: '#ccc' }} />}
+            />
+          </motion.div>
+
+
+          {/* Biodata Dialog */}
+          <BiodataDialog open={openBiodata} onClose={() => setOpenBiodata(false)} />
         </Box>
-
-        {/* Transaction History */}
-        <TransactionHistory
-          transactions={filteredTransactions}
-          loading={loading}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          formatCurrency={formatCurrency}
-          emptyIcon={<AccountBalanceIcon style={{ fontSize: 48, color: '#ccc' }} />}
-        />
-
-        {/* Biodata Dialog */}
-        <BiodataDialog open={openBiodata} onClose={() => setOpenBiodata(false)} />
-      </Box>
+      </motion.div>
     </ThemeProvider>
   )
 }

@@ -3,7 +3,7 @@ import {
     Table, TableHead, TableRow, TableCell, TableBody,
     IconButton, Dialog, DialogTitle, DialogContent,
     DialogActions, Button, TextField, MenuItem, Accordion,
-    AccordionSummary, AccordionDetails, Typography, Tabs, Tab, Box
+    AccordionSummary, AccordionDetails, Typography, Tabs, Tab
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EditIcon from '@mui/icons-material/Edit';
@@ -33,8 +33,8 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
         jumlah_bayar: ''
     });
 
-    const [openConfirmDelete, setOpenConfirmDelete] = useState(false); // New state for confirmation dialog
-    const [memberToDelete, setMemberToDelete] = useState(null); // Store the member to delete
+    const [openConfirmDelete, setOpenConfirmDelete] = useState(false);
+    const [memberToDelete, setMemberToDelete] = useState(null);
 
     useEffect(() => {
         const fetchMembers = async () => {
@@ -62,7 +62,7 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
     };
 
     const handleOpenEdit = (row) => {
-        setEditMemberId(row.id_member); // simpan id_member
+        setEditMemberId(row.id_member);
         setEditData({
             periode: '',
             minggu_ke: '',
@@ -75,6 +75,11 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
 
     const handleSaveEdit = async () => {
         try {
+            if (editData.status === 'belum' && editData.jumlah_bayar < 1000) {
+                showSnackbar('Pembayaran sementara minimal Rp 1.000', 'error');
+                return;
+            }
+
             await iuranService.updateMemberIuran(editMemberId, {
                 periode: value ? value.format('YYYY-MM') : '',
                 minggu_ke: Number(editData.minggu_ke),
@@ -82,7 +87,7 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
                 status: editData.status,
                 jumlah_bayar: editData.jumlah_bayar ? Number(editData.jumlah_bayar) : 0
             });
-            // refresh data
+
             const membersData = await iuranService.getAllMember();
             setMembers(Array.isArray(membersData) ? membersData : []);
             setOpenEditDialog(false);
@@ -103,15 +108,14 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
     };
 
     const handleDelete = (row) => {
-        setMemberToDelete(row); // Set the member to delete
-        setOpenConfirmDelete(true); // Open confirmation dialog
+        setMemberToDelete(row);
+        setOpenConfirmDelete(true);
     };
 
     const handleConfirmDelete = async () => {
         if (memberToDelete) {
             try {
                 await iuranService.deleteMember(memberToDelete.id_member);
-                // Refresh data after deletion
                 const membersData = await iuranService.getAllMember();
                 setMembers(Array.isArray(membersData) ? membersData : []);
                 showSnackbar('Member berhasil dihapus', 'success');
@@ -119,15 +123,15 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
                 console.error('Error deleting member:', error);
                 showSnackbar('Gagal menghapus member: ' + (error.message || 'Unknown error'), 'error');
             } finally {
-                setOpenConfirmDelete(false); // Close dialog after action
-                setMemberToDelete(null); // Clear the member to delete
+                setOpenConfirmDelete(false);
+                setMemberToDelete(null);
             }
         }
     };
 
     const handleCancelDelete = () => {
-        setOpenConfirmDelete(false); // Close dialog without deleting
-        setMemberToDelete(null); // Clear the member to delete
+        setOpenConfirmDelete(false);
+        setMemberToDelete(null);
     };
 
     const groupByPeriode = (data) => {
@@ -274,6 +278,8 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
                             type="number"
                             value={editData.jumlah_bayar}
                             onChange={handleChangeEdit}
+                            helperText="Minimal Rp 1.000"
+                            inputProps={{ min: 0 }}
                         />
                     )}
                 </DialogContent>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 import {
   Box,
   Snackbar,
@@ -9,7 +10,7 @@ import {
   IconButton
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import { 
+import {
   PengeluaranHeader,
   PengeluaranTable,
   PengeluaranFormDialog,
@@ -80,7 +81,7 @@ export default function Pengeluaran() {
     today.setHours(0, 0, 0, 0)
     const startDate = new Date()
     startDate.setHours(0, 0, 0, 0)
-    
+
     switch (range) {
       case 'today':
         return { start: formatDate(today), end: formatDate(today.setHours(24, 0, 0, 0)) }
@@ -253,7 +254,7 @@ export default function Pengeluaran() {
     const [datePart, timePart] = row.tanggal.split(' ')
     const [day, month, year] = datePart.split('-')
     const localDateTime = `${year}-${month}-${day}T${timePart}`
-    
+
     setEditingId(row.id)
     setFormData({
       tanggal: localDateTime,
@@ -394,90 +395,97 @@ export default function Pengeluaran() {
   }
 
   return (
-    <Box sx={{
-      padding: '24px',
-      mt: { xs: '64px', sm: '80px' }
-    }}>
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={handleCloseSnackbar}
-        TransitionComponent={Slide}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}    // mulai redup & agak turun
+      animate={{ opacity: 1, y: 0 }}     // animasi ke normal
+      exit={{ opacity: 0, y: -20 }}      // (opsional) kalau ada animasi keluar
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+    >
+      <Box sx={{
+        padding: '24px',
+        mt: { xs: '64px', sm: '80px' }
+      }}>
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={3000}
           onClose={handleCloseSnackbar}
-          severity={snackbar.severity}
-          sx={{
-            width: '100%',
-            borderRadius: '12px',
-            boxShadow: '0 4px 20px 0 rgba(0,0,0,0.1)',
-            fontWeight: 500
-          }}
-          action={
-            <IconButton
-              size="small"
-              aria-label="close"
-              color="inherit"
-              onClick={handleCloseSnackbar}
-            >
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          }
+          TransitionComponent={Slide}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <Alert
+            onClose={handleCloseSnackbar}
+            severity={snackbar.severity}
+            sx={{
+              width: '100%',
+              borderRadius: '12px',
+              boxShadow: '0 4px 20px 0 rgba(0,0,0,0.1)',
+              fontWeight: 500
+            }}
+            action={
+              <IconButton
+                size="small"
+                aria-label="close"
+                color="inherit"
+                onClick={handleCloseSnackbar}
+              >
+                <CloseIcon fontSize="small" />
+              </IconButton>
+            }
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
 
-      <PengeluaranHeader
-        totalPengeluaran={totalPengeluaran}
-        isLoadingTotal={isLoadingTotal}
-        handleAdd={handleAdd}
-        formatCurrency={formatCurrency}
-      />
+        <PengeluaranHeader
+          totalPengeluaran={totalPengeluaran}
+          isLoadingTotal={isLoadingTotal}
+          handleAdd={handleAdd}
+          formatCurrency={formatCurrency}
+        />
 
-      <PengeluaranTable
-        rows={rows}
-        loading={loading}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        totalItems={totalItems}
-        handleChangePage={handleChangePage}
-        handleChangeRowsPerPage={handleChangeRowsPerPage}
-        handleEdit={handleEdit}
-        handleDelete={handleDelete}
-        handleShowNota={handleShowNota}
-        formatDateTime={formatDateTime}
-        formatCurrency={formatCurrency}
-        timeRange={timeRange}
-        setTimeRange={setTimeRange}
-        timeRangeOptions={timeRangeOptions}
-      />
+        <PengeluaranTable
+          rows={rows}
+          loading={loading}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalItems={totalItems}
+          handleChangePage={handleChangePage}
+          handleChangeRowsPerPage={handleChangeRowsPerPage}
+          handleEdit={handleEdit}
+          handleDelete={handleDelete}
+          handleShowNota={handleShowNota}
+          formatDateTime={formatDateTime}
+          formatCurrency={formatCurrency}
+          timeRange={timeRange}
+          setTimeRange={setTimeRange}
+          timeRangeOptions={timeRangeOptions}
+        />
 
-      <PengeluaranFormDialog
-        showModal={showModal}
-        setShowModal={setShowModal}
-        editingId={editingId}
-        formData={formData}
-        handleInputChange={handleInputChange}
-        handleSave={handleSave}
-        loading={loading}
-        previewUrl={previewUrl}
-        setPreviewUrl={setPreviewUrl}
-      />
+        <PengeluaranFormDialog
+          showModal={showModal}
+          setShowModal={setShowModal}
+          editingId={editingId}
+          formData={formData}
+          handleInputChange={handleInputChange}
+          handleSave={handleSave}
+          loading={loading}
+          previewUrl={previewUrl}
+          setPreviewUrl={setPreviewUrl}
+        />
 
-      <DeleteConfirmationDialog
-        deleteDialog={deleteDialog}
-        setDeleteDialog={setDeleteDialog}
-        confirmDelete={confirmDelete}
-        loading={loading}
-      />
+        <DeleteConfirmationDialog
+          deleteDialog={deleteDialog}
+          setDeleteDialog={setDeleteDialog}
+          confirmDelete={confirmDelete}
+          loading={loading}
+        />
 
-      <NotaPreviewDialog
-        notaDialog={notaDialog}
-        handleCloseNotaDialog={handleCloseNotaDialog}
-        showSnackbar={showSnackbar}
-      />
-    </Box>
-  )
+        <NotaPreviewDialog
+          notaDialog={notaDialog}
+          handleCloseNotaDialog={handleCloseNotaDialog}
+          showSnackbar={showSnackbar}
+        />
+      </Box>
+    </motion.div>
+  );
 }

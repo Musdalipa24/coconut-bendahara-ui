@@ -9,7 +9,7 @@ import {
   IconButton
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
-import { 
+import {
   PemasukanHeader,
   PemasukanTable,
   PemasukanFormDialog,
@@ -17,6 +17,7 @@ import {
 } from '@/components/pemasukan'
 import { pemasukanService } from '@/services/pemasukanService'
 import { laporanService } from '@/services/laporanService'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function Pemasukan() {
   // State management
@@ -76,7 +77,7 @@ export default function Pemasukan() {
     today.setHours(0, 0, 0, 0);
     const startDate = new Date();
     startDate.setHours(0, 0, 0, 0);
-    
+
     switch (range) {
       case 'today':
         return { start: formatDate(today), end: formatDate(today.setHours(24, 0, 0, 0)) };
@@ -346,6 +347,7 @@ export default function Pemasukan() {
       padding: '24px',
       mt: { xs: '64px', sm: '80px' }
     }}>
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3000}
@@ -377,47 +379,89 @@ export default function Pemasukan() {
         </Alert>
       </Snackbar>
 
-      <PemasukanHeader
-        totalPemasukan={totalPemasukan}
-        isLoadingTotal={isLoadingTotal}
-        handleAdd={handleAdd}
-        formatCurrency={formatCurrency}
-      />
+      {/* Animasi untuk Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <PemasukanHeader
+          totalPemasukan={totalPemasukan}
+          isLoadingTotal={isLoadingTotal}
+          handleAdd={handleAdd}
+          formatCurrency={formatCurrency}
+        />
+      </motion.div>
 
-      <PemasukanTable
-        rows={rows}
-        loading={loading}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        totalItems={totalItems}
-        handleChangePage={handleChangePage}
-        handleChangeRowsPerPage={handleChangeRowsPerPage}
-        handleEdit={handleEdit}
-        handleDelete={handleDelete}
-        formatDateTime={formatDateTime}
-        formatCurrency={formatCurrency}
-        timeRange={timeRange}
-        setTimeRange={setTimeRange}
-        timeRangeOptions={timeRangeOptions}
-      />
+      {/* Animasi untuk Table */}
+      <motion.div
+        key={timeRange} // supaya animasi jalan saat filter berubah
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 30 }}
+        transition={{ duration: 0.5 }}
+      >
+        <PemasukanTable
+          rows={rows}
+          loading={loading}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalItems={totalItems}
+          handleChangePage={handleChangePage}
+          handleChangeRowsPerPage={handleChangeRowsPerPage}
+          handleEdit={handleEdit}
+          handleDelete={handleDelete}
+          formatDateTime={formatDateTime}
+          formatCurrency={formatCurrency}
+          timeRange={timeRange}
+          setTimeRange={setTimeRange}
+          timeRangeOptions={timeRangeOptions}
+        />
+      </motion.div>
 
-      <PemasukanFormDialog
-        showModal={showModal}
-        setShowModal={setShowModal}
-        editingId={editingId}
-        formData={formData}
-        setFormData={setFormData}
-        handleInputChange={handleInputChange}
-        handleSave={handleSave}
-        loading={loading}
-      />
+      {/* Animasi untuk Form Dialog */}
+      <AnimatePresence>
+        {showModal && (
+          <motion.div
+            key="formDialog"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.3 }}
+          >
+            <PemasukanFormDialog
+              showModal={showModal}
+              setShowModal={setShowModal}
+              editingId={editingId}
+              formData={formData}
+              setFormData={setFormData}
+              handleInputChange={handleInputChange}
+              handleSave={handleSave}
+              loading={loading}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <DeleteConfirmationDialog
-        deleteDialog={deleteDialog}
-        setDeleteDialog={setDeleteDialog}
-        confirmDelete={confirmDelete}
-        loading={loading}
-      />
+      {/* Animasi untuk Delete Confirmation */}
+      <AnimatePresence>
+        {deleteDialog.open && (
+          <motion.div
+            key="deleteDialog"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.3 }}
+          >
+            <DeleteConfirmationDialog
+              deleteDialog={deleteDialog}
+              setDeleteDialog={setDeleteDialog}
+              confirmDelete={confirmDelete}
+              loading={loading}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Box>
   );
 }

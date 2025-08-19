@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { IuranTable, IuranHeader } from '@/components/iuran'
 import CloseIcon from '@mui/icons-material/Close';
+import { motion } from 'framer-motion';
 
 const dummyBPH = [
     { nama: 'Budi', status: 'BPH', lunas: true, jumlah: 10000 },
@@ -96,32 +97,46 @@ export default function IuranPage() {
                 </Alert>
             </Snackbar>
 
-            <IuranHeader
-                totalIuran={totalIuran}
-                isLoadingTotal={isLoadingTotal}
-                formatCurrency={formatCurrency}
-                showSnackbar={showSnackbar}
-            />
+            {/* Animasi Fade In untuk Header */}
+            <motion.div
+                initial={{ opacity: 0, y: -30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+            >
+                <IuranHeader
+                    totalIuran={totalIuran}
+                    isLoadingTotal={isLoadingTotal}
+                    formatCurrency={formatCurrency}
+                    showSnackbar={showSnackbar}
+                />
+            </motion.div>
 
-            <Paper elevation={3} sx={{
-                borderRadius: '16px',
-                p: { xs: 2, sm: 4 },
-                mb: 4,
-                boxShadow: darkMode ? '0 4px 20px 0 rgba(66,165,245,0.15)' : '0 4px 20px 0 rgba(0,0,0,0.08)',
-                background: darkMode ? 'rgba(66,165,245,0.08)' : '#fff',
-                transition: 'background 0.3s'
-            }}>
-                <Box>
-                    <IuranTable
-                        rows={dummyBPH}
-                        darkMode={darkMode}
-                        formatCurrency={formatCurrency}
-                        onEdit={null}
-                        onDelete={null}
-                        showSnackbar={showSnackbar}
-                    />
-                </Box>
-            </Paper>
+            {/* Animasi Card */}
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+            >
+                <Paper elevation={3} sx={{
+                    borderRadius: '16px',
+                    p: { xs: 2, sm: 4 },
+                    mb: 4,
+                    boxShadow: darkMode ? '0 4px 20px 0 rgba(66,165,245,0.15)' : '0 4px 20px 0 rgba(0,0,0,0.08)',
+                    background: darkMode ? 'rgba(66,165,245,0.08)' : '#fff',
+                    transition: 'background 0.3s'
+                }}>
+                    <Box>
+                        <IuranTable
+                            rows={dummyBPH}
+                            darkMode={darkMode}
+                            formatCurrency={formatCurrency}
+                            onEdit={null}
+                            onDelete={null}
+                            showSnackbar={showSnackbar}
+                        />
+                    </Box>
+                </Paper>
+            </motion.div>
         </Box>
     );
 }
