@@ -71,7 +71,7 @@ export default function Pemasukan() {
     return `${year}-${month}-${day}`;
   };
 
-  const getDateRange = useCallback((range) => {
+  const getDateRange = (range) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const startDate = new Date();
@@ -102,7 +102,7 @@ export default function Pemasukan() {
       default:
         return { start: null, end: null };
     }
-  }, [formatDate]);
+  };
 
   const formatCurrency = (amount) => {
     const validAmount = Number.isFinite(Number(amount)) ? Number(amount) : 0;
@@ -134,7 +134,7 @@ export default function Pemasukan() {
   };
 
   // Data fetching
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
       const { start, end } = getDateRange(timeRange);
@@ -162,11 +162,11 @@ export default function Pemasukan() {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage, timeRange, getDateRange, pemasukanService, showSnackbar]);
+  };
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+  }, [page, rowsPerPage, timeRange]);
 
   useEffect(() => {
     const fetchTotal = async () => {
@@ -189,7 +189,7 @@ export default function Pemasukan() {
       }
     };
     fetchTotal();
-  }, [getDateRange, timeRange, laporanService, showSnackbar]);
+  }, [timeRange]);
 
   // Event handlers
   const handleInputChange = (e) => {
@@ -292,7 +292,7 @@ export default function Pemasukan() {
         nominal: formData.nominal,
         kategori: formData.kategori === 'Lainnya' ? formData.kategoriKustom : formData.kategori,
         keterangan: formData.keterangan,
-        nota: formData.nota // File atau null/URL
+        nota: formData.nota
       };
 
       let result;
