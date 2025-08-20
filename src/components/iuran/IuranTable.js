@@ -3,7 +3,8 @@ import {
     Table, TableHead, TableRow, TableCell, TableBody,
     IconButton, Dialog, DialogTitle, DialogContent,
     DialogActions, Button, TextField, MenuItem, Accordion,
-    AccordionSummary, AccordionDetails, Typography, Tabs, Tab
+    AccordionSummary, AccordionDetails, Typography, Tabs, Tab,
+    TableContainer, Box
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EditIcon from '@mui/icons-material/Edit';
@@ -184,22 +185,24 @@ export default function IuranTable({ darkMode, onDelete, showSnackbar }) {
             </Tabs>
 
             {/* Table */}
-            <Table sx={{ borderRadius: '12px', overflow: 'hidden', background: darkMode ? 'rgba(66,165,245,0.08)' : '#fff' }}>
-                <TableHead>
-                    <TableRow sx={{ background: darkMode ? '#1976D2' : '#e3f2fd' }}>
-                        <TableCell sx={{ color: darkMode ? '#fff' : '#1976D2', fontWeight: 600 }}>NRA</TableCell>
-                        <TableCell sx={{ color: darkMode ? '#fff' : '#1976D2', fontWeight: 600 }}>Nama</TableCell>
-                        <TableCell sx={{ color: darkMode ? '#fff' : '#1976D2', fontWeight: 600 }}>Status</TableCell>
-                        <TableCell sx={{ color: darkMode ? '#fff' : '#1976D2', fontWeight: 600 }}>Iuran</TableCell>
-                        <TableCell sx={{ color: darkMode ? '#fff' : '#1976D2', fontWeight: 600 }}>Aksi</TableCell>
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                    {tabValue === 0
-                        ? renderTableRows(bphMembers)
-                        : renderTableRows(regularMembers)}
-                </TableBody>
-            </Table>
+            <TableContainer component={Box} sx={{ overflowX: 'auto' }}>
+                <Table sx={{ borderRadius: '12px', overflow: 'hidden', background: darkMode ? 'rgba(66,165,245,0.08)' : '#fff', minWidth: 600 }}>
+                    <TableHead>
+                        <TableRow sx={{ background: darkMode ? '#1976D2' : '#e3f2fd' }}>
+                            <TableCell sx={{ color: darkMode ? '#fff' : '#1976D2', fontWeight: 600 }}>NRA</TableCell>
+                            <TableCell sx={{ color: darkMode ? '#fff' : '#1976D2', fontWeight: 600 }}>Nama</TableCell>
+                            <TableCell sx={{ color: darkMode ? '#fff' : '#1976D2', fontWeight: 600 }}>Status</TableCell>
+                            <TableCell sx={{ color: darkMode ? '#fff' : '#1976D2', fontWeight: 600 }}>Iuran</TableCell>
+                            <TableCell sx={{ color: darkMode ? '#fff' : '#1976D2', fontWeight: 600 }}>Aksi</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {tabValue === 0
+                            ? renderTableRows(bphMembers)
+                            : renderTableRows(regularMembers)}
+                    </TableBody>
+                </Table>
+            </TableContainer>
 
             {/* Dialog Detail */}
             <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm">

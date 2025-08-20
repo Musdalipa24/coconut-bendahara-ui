@@ -1,8 +1,9 @@
 'use client'
-import { Drawer, Box, Toolbar, Typography, List } from '@mui/material'
+import { Drawer, Box, Toolbar, Typography, List, IconButton } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close'
 import Image from 'next/image'
 import MenuItems from './MenuItems'
-import { useSoftUIController } from '@/context'
+import { useSoftUIController, setMiniSidenav } from '@/context'
 
 export default function DashboardDrawer({ darkMode, miniSidenav }) {
   const [controller, dispatch] = useSoftUIController()
@@ -20,10 +21,11 @@ export default function DashboardDrawer({ darkMode, miniSidenav }) {
             bgcolor: darkMode ? '#1a1a1a' : 'white',
             color: darkMode ? '#fff' : 'inherit',
             transition: 'background-color 0.3s, color 0.3s',
+            width: 260, // biar lebih pas
           },
         }}
       >
-        <DrawerContent darkMode={darkMode} />
+        <DrawerContent darkMode={darkMode} dispatch={dispatch} />
       </Drawer>
 
       {/* Desktop Drawer */}
@@ -35,6 +37,7 @@ export default function DashboardDrawer({ darkMode, miniSidenav }) {
             bgcolor: darkMode ? '#1a1a1a' : 'white',
             color: darkMode ? '#fff' : 'inherit',
             transition: 'background-color 0.3s, color 0.3s',
+            width: miniSidenav ? 80 : 280,
           },
         }}
         open
@@ -45,7 +48,7 @@ export default function DashboardDrawer({ darkMode, miniSidenav }) {
   )
 }
 
-function DrawerContent({ darkMode, miniSidenav }) {
+function DrawerContent({ darkMode, miniSidenav, dispatch }) {
   return (
     <Box sx={{
       height: '100%',
@@ -55,14 +58,25 @@ function DrawerContent({ darkMode, miniSidenav }) {
       color: darkMode ? '#fff' : 'inherit',
       transition: 'background-color 0.3s, color 0.3s',
     }}>
-      <Toolbar sx={{ px: 2, py: 2 }}>
+      <Toolbar sx={{ px: 2, py: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Image
-            src="/logo-lanscape.png"
-            alt="COCONUT Logo"
-            style={{ marginRight: '12px', maxWidth: '100%', height: 'auto', display: 'block', padding: '8px' }}
-            width={180}
-            height={180}
-          />
+          src="/logo-lanscape.png"
+          alt="COCONUT Logo"
+          style={{ marginRight: '12px', maxWidth: '100%', height: 'auto', display: 'block', padding: '4px' }}
+          width={140}
+          height={50}
+        />
+
+        {/* Tombol Close hanya muncul di mobile */}
+        {dispatch && (
+          <IconButton
+            edge="end"
+            onClick={() => setMiniSidenav(dispatch, false)}
+            sx={{ display: { xs: 'flex', sm: 'none' }, color: darkMode ? '#fff' : 'inherit' }}
+          >
+            <CloseIcon />
+          </IconButton>
+        )}
       </Toolbar>
 
       <Box sx={{ px: 3, mb: 2 }}>

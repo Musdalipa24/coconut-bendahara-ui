@@ -62,7 +62,8 @@ export default function DashboardAppBar({ darkMode, toggleDarkMode, setOpenPassw
           variant="h6"
           sx={{
             fontWeight: 600,
-            color: darkMode ? '#fff' : 'inherit'
+            color: darkMode ? '#fff' : 'inherit',
+            ml: '20px',
           }}
         >
           {menuItems.find(item => item.path === pathname)?.text || 'Dashboard'}
