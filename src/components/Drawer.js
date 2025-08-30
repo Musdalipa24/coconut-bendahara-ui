@@ -18,10 +18,17 @@ export default function DashboardDrawer({ darkMode, miniSidenav }) {
         sx={{
           display: { xs: 'block', sm: 'none' },
           '& .MuiDrawer-paper': {
-            bgcolor: darkMode ? '#1a1a1a' : 'white',
-            color: darkMode ? '#fff' : 'inherit',
-            transition: 'background-color 0.3s, color 0.3s',
-            width: 260, // biar lebih pas
+            background: darkMode 
+              ? 'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(60, 60, 60, 0.8) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 250, 0.8) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: darkMode 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(0, 0, 0, 0.1)',
+            borderLeft: 'none',
+            color: darkMode ? '#fff' : '#1976d2',
+            transition: 'all 0.3s ease',
+            width: 260,
           },
         }}
       >
@@ -34,9 +41,16 @@ export default function DashboardDrawer({ darkMode, miniSidenav }) {
         sx={{
           display: { xs: 'none', sm: 'block' },
           '& .MuiDrawer-paper': {
-            bgcolor: darkMode ? '#1a1a1a' : 'white',
-            color: darkMode ? '#fff' : 'inherit',
-            transition: 'background-color 0.3s, color 0.3s',
+            background: darkMode 
+              ? 'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(60, 60, 60, 0.8) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 250, 0.8) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: darkMode 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(0, 0, 0, 0.1)',
+            borderLeft: 'none',
+            color: darkMode ? '#fff' : '#1976d2',
+            transition: 'all 0.3s ease',
             width: miniSidenav ? 80 : 280,
           },
         }}
@@ -54,15 +68,31 @@ function DrawerContent({ darkMode, miniSidenav, dispatch }) {
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      bgcolor: darkMode ? '#1a1a1a' : 'white',
-      color: darkMode ? '#fff' : 'inherit',
-      transition: 'background-color 0.3s, color 0.3s',
+      background: 'transparent',
+      color: darkMode ? '#fff' : '#1976d2',
+      transition: 'all 0.3s ease',
     }}>
-      <Toolbar sx={{ px: 2, py: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <Toolbar sx={{ 
+        px: 2, 
+        py: 1, 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        position: 'relative',
+        borderBottom: darkMode 
+          ? '1px solid rgba(255, 255, 255, 0.1)' 
+          : '1px solid rgba(0, 0, 0, 0.1)',
+      }}>
         <Image
           src="/logo-lanscape.png"
           alt="COCONUT Logo"
-          style={{ marginRight: '12px', maxWidth: '100%', height: 'auto', display: 'block', padding: '4px' }}
+          style={{ 
+            maxWidth: '100%', 
+            height: 'auto', 
+            display: 'block', 
+            padding: '4px',
+            filter: darkMode ? 'brightness(1.2)' : 'none',
+          }}
           width={140}
           height={50}
         />
@@ -72,15 +102,46 @@ function DrawerContent({ darkMode, miniSidenav, dispatch }) {
           <IconButton
             edge="end"
             onClick={() => setMiniSidenav(dispatch, false)}
-            sx={{ display: { xs: 'flex', sm: 'none' }, color: darkMode ? '#fff' : 'inherit' }}
+            sx={{ 
+              display: { xs: 'flex', sm: 'none' }, 
+              position: 'absolute',
+              right: 16,
+              color: darkMode ? '#90caf9' : '#1976d2',
+              background: darkMode 
+                ? 'rgba(100, 181, 246, 0.1)' 
+                : 'rgba(25, 118, 210, 0.1)',
+              borderRadius: '8px',
+              '&:hover': {
+                background: darkMode 
+                  ? 'rgba(144, 202, 249, 0.2)' 
+                  : 'rgba(25, 118, 210, 0.15)',
+              }
+            }}
           >
             <CloseIcon />
           </IconButton>
         )}
       </Toolbar>
 
-      <Box sx={{ px: 3, mb: 2 }}>
-        <Typography variant="body2" sx={{ color: darkMode ? '#fff' : 'inherit' }}>
+      <Box sx={{ 
+        px: 3, 
+        mb: 2, 
+        mt: 2,
+        borderRadius: '12px',
+        background: darkMode 
+          ? 'rgba(100, 181, 246, 0.1)' 
+          : 'rgba(25, 118, 210, 0.05)',
+        mx: 2,
+        py: 1,
+      }}>
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: darkMode ? '#90caf9' : '#1976d2',
+            fontWeight: 600,
+            letterSpacing: '0.5px',
+          }}
+        >
           MENU BENDAHARA
         </Typography>
       </Box>

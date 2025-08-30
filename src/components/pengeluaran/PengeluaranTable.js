@@ -7,6 +7,7 @@ import {
   TableHead, 
   TableRow, 
   TablePagination,
+  TableContainer,
   Typography,
   CircularProgress,
   IconButton,
@@ -22,6 +23,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import MoneyOffIcon from '@mui/icons-material/MoneyOff'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import { StyledCard } from './styles'
+import { useSoftUIController } from '@/context'
 
 export default function PengeluaranTable({
   rows,
@@ -40,6 +42,29 @@ export default function PengeluaranTable({
   setTimeRange,
   timeRangeOptions
 }) {
+  const [controller] = useSoftUIController()
+  const { darkMode } = controller
+  const isDarkMode = darkMode
+
+  const tableHeaderStyle = {
+    backgroundColor: isDarkMode 
+      ? 'rgba(229, 57, 53, 0.1)' 
+      : 'rgba(198, 40, 40, 0.05)',
+    color: isDarkMode ? '#e57373' : '#c62828',
+    fontWeight: 600,
+  }
+
+  const getRowStyle = (index) => ({
+    backgroundColor: index % 2 === 0 
+      ? (isDarkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.8)')
+      : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(248, 249, 250, 0.8)'),
+    '&:hover': {
+      backgroundColor: isDarkMode 
+        ? 'rgba(229, 57, 53, 0.1)' 
+        : 'rgba(198, 40, 40, 0.05)',
+    }
+  })
+
   return (
     <StyledCard>
       <Box sx={{ p: 3 }}>
@@ -51,7 +76,19 @@ export default function PengeluaranTable({
           gap: { xs: 2, sm: 0 },
           mb: 3
         }}>
-          <Typography variant="h6" component="div" sx={{ color: '#c62828' }}>
+          <Typography 
+            variant="h6" 
+            component="div" 
+            sx={{ 
+              background: isDarkMode 
+                ? 'linear-gradient(45deg, #e57373, #ef5350)'
+                : 'linear-gradient(45deg, #c62828, #d32f2f)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: 600
+            }}
+          >
             Kelola data pengeluaran organisasi dengan mudah
           </Typography>
           <FormControl
@@ -61,40 +98,60 @@ export default function PengeluaranTable({
               minWidth: { xs: '100%', sm: '180px' },
               maxWidth: { xs: '600px', sm: '180px' },
               '& .MuiOutlinedInput-root': {
-                borderRadius: '10px',
-                backgroundColor: '#ffffff',
+                borderRadius: '12px',
+                background: isDarkMode 
+                  ? 'linear-gradient(135deg, rgba(40, 40, 40, 0.9) 0%, rgba(60, 60, 60, 0.7) 100%)'
+                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.7) 100%)',
+                backdropFilter: 'blur(10px)',
                 fontSize: '0.9rem',
                 padding: '4px 8px',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                border: isDarkMode 
+                  ? '1px solid rgba(229, 57, 53, 0.3)'
+                  : '1px solid rgba(198, 40, 40, 0.2)',
+                boxShadow: isDarkMode 
+                  ? '0 2px 8px rgba(229, 57, 53, 0.1)'
+                  : '0 2px 8px rgba(198, 40, 40, 0.1)',
+                color: isDarkMode ? '#ffffff' : '#000000',
                 '& .MuiSelect-select': {
                   padding: '8px 12px',
-                  paddingRight: '32px !important'
+                  paddingRight: '32px !important',
+                  color: isDarkMode ? '#ffffff' : '#000000'
                 },
-                '&:hover .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#c62828',
-                  boxShadow: '0 0 0 3px rgba(26,35,126,0.1)'
+                '&:hover': {
+                  borderColor: isDarkMode ? '#e57373' : '#c62828',
+                  boxShadow: isDarkMode 
+                    ? '0 4px 12px rgba(229, 57, 53, 0.2)'
+                    : '0 4px 12px rgba(198, 40, 40, 0.2)',
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(229, 57, 53, 0.1) 0%, rgba(244, 67, 54, 0.05) 100%)'
+                    : 'linear-gradient(135deg, rgba(198, 40, 40, 0.05) 0%, rgba(229, 57, 53, 0.02) 100%)'
                 },
-                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                  borderColor: '#c62828',
+                '&.Mui-focused': {
+                  borderColor: isDarkMode ? '#e57373' : '#c62828',
                   borderWidth: '2px',
-                  boxShadow: '0 0 0 3px rgba(26,35,126,0.1)'
+                  boxShadow: isDarkMode 
+                    ? '0 0 0 3px rgba(229, 57, 53, 0.1)'
+                    : '0 0 0 3px rgba(198, 40, 40, 0.1)',
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(229, 57, 53, 0.08) 0%, rgba(244, 67, 54, 0.04) 100%)'
+                    : 'linear-gradient(135deg, rgba(198, 40, 40, 0.08) 0%, rgba(229, 57, 53, 0.04) 100%)'
                 },
                 transition: 'all 0.2s ease'
               },
               '& .MuiInputLabel-root': {
                 fontSize: '0.9rem',
-                color: '#666',
+                color: isDarkMode ? '#b0b0b0' : '#666',
                 transform: 'translate(14px, 10px) scale(1)',
                 '&.MuiInputLabel-shrink': {
                   transform: 'translate(14px, -6px) scale(0.75)',
-                  color: '#c62828'
+                  color: isDarkMode ? '#e57373' : '#c62828'
                 },
                 '&.Mui-focused': {
-                  color: '#c62828'
+                  color: isDarkMode ? '#e57373' : '#c62828'
                 }
               },
               '& .MuiSvgIcon-root': {
-                color: '#c62828'
+                color: isDarkMode ? '#e57373' : '#c62828'
               }
             }}
           >
@@ -103,6 +160,27 @@ export default function PengeluaranTable({
               value={timeRange}
               onChange={(e) => setTimeRange(e.target.value)}
               label="Filter Periode"
+              MenuProps={{
+                PaperProps: {
+                  sx: {
+                    background: isDarkMode 
+                      ? 'linear-gradient(135deg, rgba(40, 40, 40, 0.95) 0%, rgba(60, 60, 60, 0.9) 100%)'
+                      : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 250, 0.9) 100%)',
+                    backdropFilter: 'blur(20px)',
+                    border: isDarkMode 
+                      ? '1px solid rgba(255, 255, 255, 0.1)'
+                      : '1px solid rgba(0, 0, 0, 0.1)',
+                    '& .MuiMenuItem-root': {
+                      color: isDarkMode ? '#ffffff' : '#000000',
+                      '&:hover': {
+                        backgroundColor: isDarkMode 
+                          ? 'rgba(229, 57, 53, 0.1)'
+                          : 'rgba(198, 40, 40, 0.05)'
+                      }
+                    }
+                  }
+                }
+              }}
             >
               {timeRangeOptions.map(option => (
                 <MenuItem key={option.value} value={option.value}>
@@ -113,30 +191,109 @@ export default function PengeluaranTable({
           </FormControl>
         </Box>
         
-        <Box sx={{ overflowX: 'auto', width: '100%' }}>
+        {/* Table dengan Glass Morphism seperti IuranTable */}
+        <TableContainer 
+          component={Box} 
+          sx={{ 
+            overflowX: 'auto',
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(30, 30, 30, 0.8) 0%, rgba(60, 60, 60, 0.4) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 249, 250, 0.4) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: isDarkMode 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(255, 255, 255, 0.8)',
+            borderRadius: '20px',
+            boxShadow: isDarkMode 
+              ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+              : '0 8px 32px rgba(0, 0, 0, 0.1)',
+          }}
+        >
           <Table sx={{ minWidth: 650 }}>
             <TableHead>
-              <TableRow>
-                <TableCell>No</TableCell>
-                <TableCell>Tanggal</TableCell>
-                <TableCell>Jumlah</TableCell>
-                <TableCell>Keterangan</TableCell>
-                <TableCell>Nota</TableCell>
-                <TableCell align="center">Aksi</TableCell>
+              <TableRow sx={{ 
+                background: isDarkMode 
+                  ? 'rgba(229, 115, 115, 0.1)' 
+                  : 'rgba(198, 40, 40, 0.05)',
+              }}>
+                <TableCell sx={{ 
+                  color: isDarkMode ? '#e57373' : '#c62828',
+                  fontWeight: 600 
+                }}>
+                  No
+                </TableCell>
+                <TableCell sx={{ 
+                  color: isDarkMode ? '#e57373' : '#c62828',
+                  fontWeight: 600 
+                }}>
+                  Tanggal
+                </TableCell>
+                <TableCell sx={{ 
+                  color: isDarkMode ? '#e57373' : '#c62828',
+                  fontWeight: 600 
+                }}>
+                  Jumlah
+                </TableCell>
+                <TableCell sx={{ 
+                  color: isDarkMode ? '#e57373' : '#c62828',
+                  fontWeight: 600 
+                }}>
+                  Keterangan
+                </TableCell>
+                <TableCell sx={{ 
+                  color: isDarkMode ? '#e57373' : '#c62828',
+                  fontWeight: 600 
+                }}>
+                  Nota
+                </TableCell>
+                <TableCell 
+                  align="center"
+                  sx={{ 
+                    color: isDarkMode ? '#e57373' : '#c62828',
+                    fontWeight: 600 
+                  }}
+                >
+                  Aksi
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                    <CircularProgress />
+                    <Box 
+                      sx={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: isDarkMode 
+                          ? 'conic-gradient(from 0deg, #e57373, #ef5350, #f44336, #e57373)'
+                          : 'conic-gradient(from 0deg, #c62828, #d32f2f, #f44336, #c62828)',
+                        animation: 'spin 2s linear infinite',
+                        margin: '0 auto 8px',
+                        '@keyframes spin': {
+                          '0%': { transform: 'rotate(0deg)' },
+                          '100%': { transform: 'rotate(360deg)' },
+                        },
+                      }}
+                    />
+                    <Typography sx={{ color: isDarkMode ? '#e57373' : '#c62828' }}>
+                      Memuat data pengeluaran...
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                    <MoneyOffIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
-                    <Typography variant="body1" color="textSecondary">
+                    <MoneyOffIcon sx={{ 
+                      fontSize: 48, 
+                      color: isDarkMode ? '#f44336' : '#e57373', 
+                      mb: 2 
+                    }} />
+                    <Typography 
+                      variant="body1" 
+                      sx={{ color: isDarkMode ? '#b0b0b0' : '#666666' }}
+                    >
                       Tidak ada data pengeluaran
                     </Typography>
                   </TableCell>
@@ -146,28 +303,51 @@ export default function PengeluaranTable({
                   <TableRow
                     key={row.id}
                     sx={{
+                      backgroundColor: index % 2 === 0 
+                        ? (isDarkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.8)')
+                        : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(248, 249, 250, 0.8)'),
                       '&:hover': {
-                        backgroundColor: '#f5f5f5'
+                        backgroundColor: isDarkMode 
+                          ? 'rgba(229, 115, 115, 0.1)' 
+                          : 'rgba(198, 40, 40, 0.05)',
+                        '& .action-buttons': {
+                          opacity: 1
+                        }
                       }
                     }}
                   >
-                    <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell>{formatDateTime(row.tanggal)}</TableCell>
-                    <TableCell sx={{ color: '#d32f2f', fontWeight: 600 }}>
+                    <TableCell sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+                      {page * rowsPerPage + index + 1}
+                    </TableCell>
+                    <TableCell sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+                      {formatDateTime(row.tanggal)}
+                    </TableCell>
+                    <TableCell sx={{ 
+                      color: isDarkMode ? '#e57373' : '#d32f2f', 
+                      fontWeight: 600 
+                    }}>
                       {formatCurrency(row.nominal)}
                     </TableCell>
-                    <TableCell>{row.keterangan}</TableCell>
+                    <TableCell sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+                      {row.keterangan}
+                    </TableCell>
                     <TableCell>
                       {row.nota ? (
                         <IconButton
                           onClick={() => handleShowNota(row.nota)}
                           size="small"
                           aria-label={`Lihat nota pengeluaran nomor ${row.id}`}
+                          sx={{ color: isDarkMode ? '#e57373' : '#c62828' }}
                         >
                           <ReceiptIcon />
                         </IconButton>
                       ) : (
-                        <Typography variant="caption">Tidak ada</Typography>
+                        <Typography 
+                          variant="caption" 
+                          sx={{ color: isDarkMode ? '#888888' : '#666666' }}
+                        >
+                          Tidak ada
+                        </Typography>
                       )}
                     </TableCell>
                     <TableCell align="center">
@@ -187,7 +367,7 @@ export default function PengeluaranTable({
                             onClick={() => handleEdit(row)}
                             aria-label={`Edit pengeluaran nomor ${row.id}`}
                             sx={{
-                              color: '#c62828',
+                              color: isDarkMode ? '#e57373' : '#c62828',
                               width: { xs: '35px', sm: '30px' },
                               height: { xs: '35px', sm: '30px' }
                             }}
@@ -201,7 +381,7 @@ export default function PengeluaranTable({
                             onClick={() => handleDelete(row.id)}
                             aria-label={`Hapus pengeluaran nomor ${row.id}`}
                             sx={{
-                              color: '#d32f2f',
+                              color: isDarkMode ? '#e57373' : '#d32f2f',
                               width: { xs: '35px', sm: '30px' },
                               height: { xs: '35px', sm: '30px' }
                             }}
@@ -216,6 +396,7 @@ export default function PengeluaranTable({
               )}
             </TableBody>
           </Table>
+          
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
@@ -227,13 +408,25 @@ export default function PengeluaranTable({
             labelRowsPerPage="Baris per halaman:"
             labelDisplayedRows={({ from, to, count }) => `${from}-${to} dari ${count}`}
             sx={{
-              borderTop: '1px solid rgba(224, 224, 224, 1)',
+              borderTop: isDarkMode 
+                ? '1px solid rgba(255, 255, 255, 0.1)' 
+                : '1px solid rgba(224, 224, 224, 1)',
+              color: isDarkMode ? '#ffffff' : '#000000',
               '& .MuiTablePagination-toolbar': {
                 padding: '16px'
+              },
+              '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+                color: isDarkMode ? '#ffffff' : '#000000'
+              },
+              '& .MuiTablePagination-select': {
+                color: isDarkMode ? '#ffffff' : '#000000'
+              },
+              '& .MuiIconButton-root': {
+                color: isDarkMode ? '#ffffff' : '#000000'
               }
             }}
           />
-        </Box>
+        </TableContainer>
       </Box>
     </StyledCard>
   )

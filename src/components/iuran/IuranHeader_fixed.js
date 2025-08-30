@@ -118,7 +118,7 @@ export default function IuranHeader({
                 : '0 2px 10px rgba(21, 101, 192, 0.3)',
             }}
           >
-            Data Iuran
+            👥 Data Iuran
           </Typography>
           <Typography 
             variant="subtitle1" 

@@ -7,6 +7,74 @@ import {
   DialogActions, CircularProgress
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
+import { DesktopAddButton } from './styles'
+import { iuranService } from '@/services/iuranService'
+
+export default function IuranHeader({
+  totalIuran,
+  isLoadingTotal,
+  formatCurrency,
+  showSnackbar
+}) {
+  const [openIuranDialog, setOpenIuranDialog] = useState(false);
+  const [status, setStatus] = useState('bph');
+  const [nra, setNra] = useState('');
+  const [nama, setNama] = useState('');
+  const [loadingSubmit, setLoadingSubmit] = useState(false);
+
+  const handleOpenIuranDialog = () => {
+    setOpenIuranDialog(true);
+    setStatus('bph');
+    setNra('');
+    setNama('');
+  };
+
+  const handleCloseIuranDialog = () => {
+    setOpenIuranDialog(false);
+  };
+
+  const handleSubmitIuran = async (e) => {
+    e.preventDefault();
+    setLoadingSubmit(true);
+
+    try {
+      const newMember = { status, nra, nama };
+      const response = await iuranService.addMember(newMember);
+
+      if (response?.code >= 200 && response?.code < 300) {
+        if (typeof showSnackbar === 'function') {
+          showSnackbar('Member berhasil ditambahkan', 'success');
+        }
+
+        handleCloseIuranDialog();
+      } else {
+        console.error('Gagal menambah member:', response);
+        if (typeof showSnackbar === 'function') {
+          showSnackbar(response.message || 'Gagal menambah member', 'error');
+        }
+      }
+    } catch (error) {
+      console.error('Error saat tambah member:', error);
+      if (typeof showSnackbar === 'function') {
+        showSnackbar(error.message || 'Terjadi kesalahan', 'error');
+      }
+    } finally {
+      setLoadingSubmit(false);
+    }
+  };
+
+
+  return (
+    <>
+'use client'
+
+import React, { useState } from 'react'
+import {
+  Box, Typography, Button, Dialog, DialogTitle, DialogContent,
+  FormControl, InputLabel, Select, MenuItem, TextField,
+  DialogActions, CircularProgress
+} from '@mui/material'
+import AddIcon from '@mui/icons-material/Add'
 import GroupIcon from '@mui/icons-material/Group'
 import { DesktopAddButton } from './styles'
 import { iuranService } from '@/services/iuranService'
@@ -118,7 +186,7 @@ export default function IuranHeader({
                 : '0 2px 10px rgba(21, 101, 192, 0.3)',
             }}
           >
-            Data Iuran
+            👥 Data Iuran
           </Typography>
           <Typography 
             variant="subtitle1" 
@@ -330,6 +398,9 @@ export default function IuranHeader({
           </DialogContent>
         </Dialog>
       </Box>
+    </>
+  )
+}
     </>
   )
 }

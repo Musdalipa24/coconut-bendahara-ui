@@ -14,7 +14,9 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
-  Typography
+  Typography,
+  ThemeProvider,
+  createTheme
 } from '@mui/material';
 import { Close as CloseIcon, Download as DownloadIcon, Print as PrintIcon } from '@mui/icons-material';
 import jsPDF from 'jspdf';
@@ -26,10 +28,76 @@ import SummaryCards from '@/components/laporanKeuangan/SummaryCards';
 import LaporanTable from '@/components/laporanKeuangan/LaporanTable';
 import LaporanCardsMobile from '@/components/laporanKeuangan/LaporanCardsMobile';
 import DownloadMenu from '@/components/laporanKeuangan/DownloadMenu';
+import { useSoftUIController } from '@/context';
+
+// Custom theme untuk dark mode yang lebih menarik
+const createCustomTheme = (isDark) => createTheme({
+  palette: {
+    mode: isDark ? 'dark' : 'light',
+    primary: {
+      main: isDark ? '#64b5f6' : '#1976d2',
+      light: isDark ? '#90caf9' : '#42a5f5',
+      dark: isDark ? '#1976d2' : '#0d47a1',
+    },
+    secondary: {
+      main: isDark ? '#f48fb1' : '#dc004e',
+    },
+    background: {
+      default: isDark ? '#0a0a0a' : '#f5f5f5',
+      paper: isDark ? '#1e1e1e' : '#ffffff',
+    },
+    text: {
+      primary: isDark ? '#ffffff' : '#000000',
+      secondary: isDark ? '#b0b0b0' : '#666666',
+    },
+  },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          background: isDark 
+            ? 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)'
+            : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+          backdropFilter: 'blur(10px)',
+          border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)',
+        }
+      }
+    }
+  }
+});
+
+// Global styles untuk animasi loading
+const globalStyles = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+`;
+
+// Inject global styles
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.type = 'text/css';
+  styleSheet.innerText = globalStyles;
+  document.head.appendChild(styleSheet);
+}
 
 export default function LaporanKeuangan() {
+  const [controller] = useSoftUIController()
+  const { darkMode } = controller
+  const isDarkMode = darkMode
+  
   const [data, setData] = useState([])
-  const [darkMode, setDarkMode] = useState(false)
   const [filteredData, setFilteredData] = useState([])
   const [timeRange, setTimeRange] = useState('all')
   const [loading, setLoading] = useState(true)
@@ -42,6 +110,8 @@ export default function LaporanKeuangan() {
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' })
   const [pdfPreview, setPdfPreview] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
+  
+  const customTheme = createCustomTheme(isDarkMode)
   const open = Boolean(anchorEl)
 
   useEffect(() => {
@@ -58,14 +128,18 @@ export default function LaporanKeuangan() {
         setSaldoAkhir(Number.isFinite(saldo) ? saldo : 0)
       } catch (error) {
         console.error('Error fetching summary:', error)
-        setAlert({
-          open: true,
-          message: 'Gagal memuat ringkasan keuangan',
-          severity: 'error'
-        })
         setTotalPemasukan(0)
         setTotalPengeluaran(0)
         setSaldoAkhir(0)
+        
+        // Only show error if it's not a "no data" situation
+        if (!error.message.includes("can't access property") && !error.message.includes('null')) {
+          setAlert({
+            open: true,
+            message: 'Gagal memuat ringkasan keuangan',
+            severity: 'warning'
+          })
+        }
       } finally {
         setIsLoadingSummary(false)
       }
@@ -75,7 +149,15 @@ export default function LaporanKeuangan() {
 
   const formatDate = (date) => {
     if (!date) return null
-    const d = new Date(date)
+    
+    // Pastikan input adalah Date object yang valid
+    const d = date instanceof Date && !isNaN(date) ? date : new Date(date)
+    
+    if (isNaN(d)) {
+      console.error('Invalid date provided to formatDate:', date)
+      return null
+    }
+    
     const year = d.getFullYear()
     const month = String(d.getMonth() + 1).padStart(2, '0')
     const day = String(d.getDate()).padStart(2, '0')
@@ -104,29 +186,77 @@ export default function LaporanKeuangan() {
   const getDateRange = (range) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const startDate = new Date()
-    startDate.setHours(0, 0, 0, 0)
+    
+    // Validasi input range
+    if (!range || typeof range !== 'string') {
+      console.error('Invalid range provided to getDateRange:', range)
+      return { start: null, end: null }
+    }
+    
     switch (range) {
-      case 'today':
-        return { start: formatDate(today), end: formatDate(today.setHours(24, 0, 0, 0)) }
-      case 'yesterday':
-        startDate.setDate(today.getDate() - 1)
+      case 'today': {
+        const endOfToday = new Date(today)
+        endOfToday.setHours(23, 59, 59, 999)
+        return { start: formatDate(today), end: formatDate(endOfToday) }
+      }
+      case 'yesterday': {
+        const yesterday = new Date(today)
+        yesterday.setDate(yesterday.getDate() - 1)
+        return { start: formatDate(yesterday), end: formatDate(yesterday) }
+      }
+      case '7days': {
+        const startDate = new Date(today)
+        startDate.setDate(startDate.getDate() - 6) // 6 hari lalu + hari ini = 7 hari
         return { start: formatDate(startDate), end: formatDate(today) }
-      case '7days':
-        startDate.setDate(today.getDate() - 7)
+      }
+      case '1month': {
+        const startDate = new Date(today)
+        startDate.setMonth(startDate.getMonth() - 1)
+        
+        // Handle edge case: jika bulan sekarang adalah Maret dan tanggal 31, 
+        // maka 1 bulan lalu tidak ada tanggal 31 Februari
+        if (startDate.getMonth() === today.getMonth()) {
+          // setMonth otomatis adjust ke hari terakhir bulan sebelumnya
+          startDate.setDate(0) // Set ke hari terakhir bulan sebelumnya
+        }
+        
         return { start: formatDate(startDate), end: formatDate(today) }
-      case '1month':
-        startDate.setMonth(today.getMonth() - 1)
+      }
+      case '3months': {
+        const startDate = new Date(today)
+        startDate.setMonth(startDate.getMonth() - 3)
+        
+        // Handle edge case untuk tanggal yang tidak ada di bulan target
+        if (startDate.getDate() !== today.getDate()) {
+          startDate.setDate(1) // Set ke tanggal 1 bulan target untuk konsistensi
+        }
+        
         return { start: formatDate(startDate), end: formatDate(today) }
-      case '3months':
-        startDate.setMonth(today.getMonth() - 3)
+      }
+      case '6months': {
+        const startDate = new Date(today)
+        startDate.setMonth(startDate.getMonth() - 6)
+        
+        // Handle edge case untuk tanggal yang tidak ada di bulan target
+        if (startDate.getDate() !== today.getDate()) {
+          startDate.setDate(1) // Set ke tanggal 1 bulan target untuk konsistensi
+        }
+        
         return { start: formatDate(startDate), end: formatDate(today) }
-      case '6months':
-        startDate.setMonth(today.getMonth() - 6)
+      }
+      case '1year': {
+        const startDate = new Date(today)
+        startDate.setFullYear(startDate.getFullYear() - 1)
+        
+        // Handle edge case untuk tahun kabisat (29 Februari)
+        if (startDate.getMonth() !== today.getMonth() || startDate.getDate() !== today.getDate()) {
+          // Jika tanggal tidak sama (misal: 29 Feb di tahun non-kabisat), set ke 1 Maret
+          startDate.setMonth(today.getMonth())
+          startDate.setDate(1)
+        }
+        
         return { start: formatDate(startDate), end: formatDate(today) }
-      case '1year':
-        startDate.setFullYear(today.getFullYear() - 1)
-        return { start: formatDate(startDate), end: formatDate(today) }
+      }
       case 'all':
       default:
         return { start: null, end: null }
@@ -136,15 +266,45 @@ export default function LaporanKeuangan() {
   const fetchDataByRange = async (range) => {
     try {
       setLoading(true)
+      setError(null) // Reset error state
+      
       const { start, end } = getDateRange(range)
-      console.log(start, "-", end)
+      console.log('Date range:', start, "-", end)
+      
+      // Validasi hasil getDateRange
+      if (range !== 'all' && (!start || !end)) {
+        throw new Error(`Gagal menghitung rentang tanggal untuk periode: ${range}`)
+      }
+      
       let rangeData
+      
       if (!start || !end) {
         rangeData = await laporanService.getAllLaporan()
       } else {
-        const startDate = formatDate(start)
-        const endDate = formatDate(end)
-        rangeData = await laporanService.getLaporanByDateRange(startDate, endDate)
+        // Validasi format tanggal sebelum mengirim ke API
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/
+        if (!dateRegex.test(start) || !dateRegex.test(end)) {
+          throw new Error(`Format tanggal tidak valid: ${start} - ${end}`)
+        }
+        
+        rangeData = await laporanService.getLaporanByDateRange(start, end)
+      }
+      
+      // Handle empty or invalid data
+      if (!rangeData || !Array.isArray(rangeData)) {
+        console.log('Data laporan kosong atau format tidak valid:', rangeData)
+        setData([])
+        setFilteredData([])
+        
+        // Berikan feedback yang lebih informatif kepada user
+        if (range !== 'all') {
+          setAlert({
+            open: true,
+            message: `Tidak ada data ditemukan untuk periode ${timeRangeOptions.find(opt => opt.value === range)?.label || range}`,
+            severity: 'info'
+          })
+        }
+        return
       }
       
       // Sort data by date (newest to oldest - newest at top for website display)
@@ -171,14 +331,29 @@ export default function LaporanKeuangan() {
       
       setData(sortedData)
       setFilteredData(sortedData)
+      
     } catch (error) {
       console.error('Error fetching data:', error)
       setData([])
       setFilteredData([])
+      
+      // Provide more user-friendly error messages
+      let errorMessage = 'Terjadi kesalahan saat memuat data laporan'
+      
+      if (error.message.includes('Network Error') || error.message.includes('fetch')) {
+        errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.'
+      } else if (error.message.includes('404')) {
+        errorMessage = 'Data laporan tidak ditemukan.'
+      } else if (error.message.includes('500')) {
+        errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.'
+      } else if (error.message.includes("can't access property")) {
+        errorMessage = 'Belum ada data laporan yang tersimpan.'
+      }
+      
       setAlert({
         open: true,
-        message: 'Gagal memuat data laporan',
-        severity: 'error'
+        message: errorMessage,
+        severity: error.message.includes("can't access property") ? 'info' : 'error'
       })
     } finally {
       setLoading(false)
@@ -186,6 +361,14 @@ export default function LaporanKeuangan() {
   }
 
   useEffect(() => {
+    // Validasi timeRange sebelum fetch
+    const validRanges = ['today', 'yesterday', '7days', '1month', '3months', '6months', '1year', 'all']
+    if (!validRanges.includes(timeRange)) {
+      console.error('Invalid timeRange detected:', timeRange)
+      setTimeRange('all') // Fallback ke 'all'
+      return
+    }
+    
     fetchDataByRange(timeRange)
   }, [timeRange])
 
@@ -682,72 +865,328 @@ export default function LaporanKeuangan() {
   ]
 
   return (
-    <AnimatedContainer maxWidth="lg" sx={{ mt: 4, mb: 4, backgroundColor: theme => theme.palette.mode === 'dark' ? '#121212' : 'transparent', borderRadius: '16px', padding: '24px' }}>
-      <Fade in={alert.open}>
-        <Alert
-          severity={alert.severity}
-          sx={{ position: 'fixed', top: 24, right: 24, zIndex: 9999, boxShadow: '0 4px 20px 0 rgba(0,0,0,0.1)', borderRadius: '12px' }}
-          onClose={() => setAlert({ ...alert, open: false })}
+    <ThemeProvider theme={customTheme}>
+      <Box sx={{
+        minHeight: '100vh',
+        background: isDarkMode 
+          ? 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%)'
+          : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: isDarkMode
+            ? 'radial-gradient(circle at 25% 25%, rgba(100, 181, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(244, 143, 177, 0.1) 0%, transparent 50%)'
+            : 'radial-gradient(circle at 25% 25%, rgba(25, 118, 210, 0.05) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(220, 0, 78, 0.05) 0%, transparent 50%)',
+          pointerEvents: 'none',
+        }
+      }}>
+        <AnimatedContainer 
+          maxWidth="lg" 
+          sx={{ 
+            mb: 4, 
+            position: 'relative',
+            zIndex: 1,
+            backgroundColor: 'transparent',
+            borderRadius: '24px', 
+            padding: '32px',
+            backdropFilter: 'blur(20px)',
+          }}
         >
-          {alert.message}
-        </Alert>
-      </Fade>
+          <Fade in={alert.open}>
+            <Alert
+              severity={alert.severity}
+              sx={{ 
+                position: 'fixed', 
+                top: 24, 
+                right: 24, 
+                zIndex: 9999, 
+                boxShadow: isDarkMode 
+                  ? '0 8px 32px rgba(0,0,0,0.4)' 
+                  : '0 8px 32px rgba(0,0,0,0.1)', 
+                borderRadius: '16px',
+                backdropFilter: 'blur(10px)',
+                background: isDarkMode 
+                  ? 'rgba(30, 30, 30, 0.9)' 
+                  : 'rgba(255, 255, 255, 0.9)',
+              }}
+              onClose={() => setAlert({ ...alert, open: false })}
+            >
+              {alert.message}
+            </Alert>
+          </Fade>
 
       {loading && isLoadingSummary ? (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          {/* Loading spinner */}
-          <span className="loader" />
+        <Box 
+          display="flex" 
+          flexDirection="column"
+          justifyContent="center" 
+          alignItems="center" 
+          minHeight="400px"
+          sx={{
+            borderRadius: '20px',
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(30, 30, 30, 0.6) 0%, rgba(60, 60, 60, 0.3) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(248, 249, 250, 0.3) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: isDarkMode 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(255, 255, 255, 0.8)',
+          }}
+        >
+          <Box 
+            sx={{
+              width: '60px',
+              height: '60px',
+              borderRadius: '50%',
+              background: isDarkMode 
+                ? 'conic-gradient(from 0deg, #64b5f6, #90caf9, #42a5f5, #64b5f6)'
+                : 'conic-gradient(from 0deg, #1976d2, #42a5f5, #2196f3, #1976d2)',
+              animation: 'spin 2s linear infinite',
+              mb: 2,
+              '@keyframes spin': {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' },
+              },
+            }}
+          />
+          <Typography 
+            variant="h6" 
+            sx={{ 
+              color: isDarkMode ? '#90caf9' : '#1976d2',
+              fontWeight: 600,
+            }}
+          >
+            Memuat laporan keuangan...
+          </Typography>
         </Box>
       ) : error ? (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
-          <span style={{ color: 'red' }}>{error}</span>
+        <Box 
+          display="flex" 
+          flexDirection="column"
+          justifyContent="center" 
+          alignItems="center" 
+          minHeight="200px"
+          sx={{
+            borderRadius: '20px',
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.1) 0%, rgba(255, 87, 34, 0.05) 100%)'
+              : 'linear-gradient(135deg, rgba(244, 67, 54, 0.05) 0%, rgba(255, 87, 34, 0.02) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: isDarkMode 
+              ? '1px solid rgba(244, 67, 54, 0.2)' 
+              : '1px solid rgba(244, 67, 54, 0.1)',
+            p: 4,
+          }}
+        >
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              color: isDarkMode ? '#ef5350' : '#d32f2f',
+              fontWeight: 600,
+              mb: 1,
+            }}
+          >
+            Terjadi Kesalahan
+          </Typography>
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              color: isDarkMode ? '#ffcdd2' : '#c62828',
+              textAlign: 'center',
+            }}
+          >
+            {error}
+          </Typography>
         </Box>
       ) : (
         <div>
-          <Box display="flex" justifyContent="space-between" alignItems="center" mb={3} sx={{ flexDirection: { xs: 'column', sm: 'row' }, gap: { xs: 2, sm: 0 } }}>
-            <AnimatedTypography variant="h4" sx={{ fontWeight: 600, color: theme => theme.palette.mode === 'dark' ? '#42A5F5' : '#1976D2', textShadow: theme => theme.palette.mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.3)' : 'none', fontSize: { xs: '1.5rem', sm: '2rem' } }}>
+          <Box 
+            display="flex" 
+            justifyContent="space-between" 
+            alignItems="center" 
+            mb={4} 
+            sx={{ 
+              flexDirection: { xs: 'column', sm: 'row' }, 
+              gap: { xs: 3, sm: 0 },
+              p: 3,
+              borderRadius: '20px',
+              background: isDarkMode 
+                ? 'linear-gradient(135deg, rgba(30, 30, 30, 0.8) 0%, rgba(60, 60, 60, 0.4) 100%)'
+                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 249, 250, 0.4) 100%)',
+              backdropFilter: 'blur(20px)',
+              border: isDarkMode 
+                ? '1px solid rgba(255, 255, 255, 0.1)' 
+                : '1px solid rgba(255, 255, 255, 0.8)',
+              boxShadow: isDarkMode 
+                ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+                : '0 8px 32px rgba(0, 0, 0, 0.1)',
+            }}
+          >
+            <AnimatedTypography 
+              variant="h4" 
+              sx={{ 
+                fontWeight: 700, 
+                background: isDarkMode 
+                  ? 'linear-gradient(45deg, #64b5f6, #90caf9, #42a5f5)'
+                  : 'linear-gradient(45deg, #1976d2, #42a5f5, #1e88e5)',
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                textShadow: 'none',
+                fontSize: { xs: '1.8rem', sm: '2.5rem' },
+                letterSpacing: '-0.02em',
+              }}
+            >
               Laporan Keuangan
             </AnimatedTypography>
-            <Box sx={{ display: 'flex', gap: 2, width: { xs: '100%', sm: 'auto' }, flexDirection: { xs: 'column', sm: 'row' } }}>
-              <StyledFormControl variant="outlined" size="large" sx={{ minWidth: { xs: '100%', sm: '250px' } }}>
-                <InputLabel sx={{ color: darkMode ? '#90caf9' : undefined }}>Filter Periode</InputLabel>
+            
+            <Box sx={{ 
+              display: 'flex', 
+              gap: 2, 
+              width: { xs: '100%', sm: 'auto' }, 
+              flexDirection: { xs: 'column', sm: 'row' } 
+            }}>
+              <StyledFormControl 
+                variant="outlined" 
+                size="large" 
+                sx={{ 
+                  minWidth: { xs: '100%', sm: '280px' },
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '16px',
+                    background: isDarkMode 
+                      ? 'rgba(100, 181, 246, 0.1)' 
+                      : 'rgba(255, 255, 255, 0.9)',
+                    backdropFilter: 'blur(10px)',
+                    border: isDarkMode 
+                      ? '1px solid rgba(144, 202, 249, 0.3)' 
+                      : '1px solid rgba(25, 118, 210, 0.2)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      border: isDarkMode 
+                        ? '1px solid rgba(144, 202, 249, 0.5)' 
+                        : '1px solid rgba(25, 118, 210, 0.4)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: isDarkMode 
+                        ? '0 8px 25px rgba(100, 181, 246, 0.2)' 
+                        : '0 8px 25px rgba(25, 118, 210, 0.15)',
+                    }
+                  }
+                }}
+              >
+                <InputLabel sx={{ 
+                  color: isDarkMode ? '#90caf9' : '#1976d2',
+                  fontWeight: 600,
+                }}>
+                  Filter Periode
+                </InputLabel>
                 <Select
                   value={timeRange}
-                  onChange={(e) => setTimeRange(e.target.value)}
+                  onChange={(e) => {
+                    const newValue = e.target.value
+                    const validRanges = ['today', 'yesterday', '7days', '1month', '3months', '6months', '1year', 'all']
+                    if (validRanges.includes(newValue)) {
+                      setTimeRange(newValue)
+                    } else {
+                      console.error('Invalid timeRange selected:', newValue)
+                      setAlert({
+                        open: true,
+                        message: 'Pilihan periode tidak valid',
+                        severity: 'error'
+                      })
+                    }
+                  }}
                   label="Filter Periode"
                   sx={{
-                    background: darkMode ? 'rgba(66,165,245,0.08)' : 'white',
-                    color: darkMode ? '#fff' : '#1976D2',
-                    borderRadius: '12px',
+                    color: isDarkMode ? '#fff' : '#1976d2',
+                    fontWeight: 500,
                     '& .MuiSelect-icon': {
-                      color: darkMode ? '#90caf9' : '#1976D2',
+                      color: isDarkMode ? '#90caf9' : '#1976d2',
                     },
                   }}
                 >
                   {timeRangeOptions.map(option => (
-                    <MenuItem key={option.value} value={option.value} sx={{ py: 1.5, px: 2 }}>{option.label}</MenuItem>
+                    <MenuItem 
+                      key={option.value} 
+                      value={option.value} 
+                      sx={{ 
+                        py: 1.5, 
+                        px: 2,
+                        background: isDarkMode ? '#1e1e1e' : '#fff',
+                        '&:hover': {
+                          background: isDarkMode 
+                            ? 'rgba(100, 181, 246, 0.1)' 
+                            : 'rgba(25, 118, 210, 0.05)',
+                        }
+                      }}
+                    >
+                      {option.label}
+                    </MenuItem>
                   ))}
                 </Select>
               </StyledFormControl>
+              
               <Button
                 variant="outlined"
                 onClick={() => fetchDataByRange(timeRange)}
-                fullWidth={false}
-                sx={theme => ({
-                  borderRadius: '12px',
-                  minWidth: { xs: '100%', sm: '120px' },
-                  color: theme.palette.mode === 'dark' ? '#fff' : '#1976D2',
-                  borderColor: theme.palette.mode === 'dark' ? '#fff' : '#1976D2',
-                  background: theme.palette.mode === 'dark' ? 'rgba(66,165,245,0.08)' : 'transparent',
+                sx={{
+                  borderRadius: '16px',
+                  minWidth: { xs: '100%', sm: '140px' },
+                  height: '56px',
+                  color: isDarkMode ? '#90caf9' : '#1976d2',
+                  borderColor: isDarkMode ? '#90caf9' : '#1976d2',
+                  background: isDarkMode 
+                    ? 'rgba(144, 202, 249, 0.1)' 
+                    : 'rgba(255, 255, 255, 0.9)',
+                  backdropFilter: 'blur(10px)',
+                  fontWeight: 600,
+                  transition: 'all 0.3s ease',
                   '&:hover': {
-                    background: theme.palette.mode === 'dark' ? 'rgba(66,165,245,0.18)' : 'rgba(25,118,210,0.08)',
-                    borderColor: theme.palette.mode === 'dark' ? '#90caf9' : '#1976D2',
+                    background: isDarkMode 
+                      ? 'rgba(144, 202, 249, 0.2)' 
+                      : 'rgba(25, 118, 210, 0.08)',
+                    borderColor: isDarkMode ? '#64b5f6' : '#1565c0',
+                    transform: 'translateY(-2px)',
+                    boxShadow: isDarkMode 
+                      ? '0 8px 25px rgba(144, 202, 249, 0.3)' 
+                      : '0 8px 25px rgba(25, 118, 210, 0.2)',
                   },
-                })}
+                }}
               >
                 Refresh Data
               </Button>
-              <Button variant="contained" onClick={handleClick} fullWidth={false} sx={{ minWidth: { xs: '100%', sm: '160px' }, borderRadius: '12px', background: 'linear-gradient(135deg, #1976D2 0%, #2196F3 100%)' }}>
+              
+              <Button 
+                variant="contained" 
+                onClick={handleClick} 
+                sx={{ 
+                  minWidth: { xs: '100%', sm: '180px' }, 
+                  height: '56px',
+                  borderRadius: '16px', 
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, #64b5f6 0%, #42a5f5 50%, #2196f3 100%)'
+                    : 'linear-gradient(135deg, #1976d2 0%, #2196f3 50%, #42a5f5 100%)',
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  transition: 'all 0.3s ease',
+                  boxShadow: isDarkMode 
+                    ? '0 8px 25px rgba(100, 181, 246, 0.4)' 
+                    : '0 8px 25px rgba(25, 118, 210, 0.3)',
+                  '&:hover': {
+                    transform: 'translateY(-3px)',
+                    boxShadow: isDarkMode 
+                      ? '0 12px 35px rgba(100, 181, 246, 0.5)' 
+                      : '0 12px 35px rgba(25, 118, 210, 0.4)',
+                    background: isDarkMode 
+                      ? 'linear-gradient(135deg, #42a5f5 0%, #2196f3 50%, #1976d2 100%)'
+                      : 'linear-gradient(135deg, #1565c0 0%, #1976d2 50%, #2196f3 100%)',
+                  }
+                }}
+              >
                 Unduh Laporan
               </Button>
             </Box>
@@ -862,6 +1301,8 @@ export default function LaporanKeuangan() {
           </Button>
         </DialogActions>
       </Dialog>
-    </AnimatedContainer>
+        </AnimatedContainer>
+      </Box>
+    </ThemeProvider>
   );
 }

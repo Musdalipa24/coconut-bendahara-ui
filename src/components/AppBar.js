@@ -39,10 +39,18 @@ export default function DashboardAppBar({ darkMode, toggleDarkMode, setOpenPassw
         xs: 0,
         sm: controller.miniSidenav ? '80px' : '280px'
       },
-      bgcolor: darkMode ? 'rgba(26, 26, 26, 0.8)' : 'rgba(255, 255, 255, 0.8)',
-      backdropFilter: 'blur(6px)',
-      color: darkMode ? '#fff' : 'inherit',
-      boxShadow: 'none',
+      background: darkMode 
+        ? 'linear-gradient(135deg, rgba(30, 30, 30, 0.8) 0%, rgba(60, 60, 60, 0.4) 100%)'
+        : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 249, 250, 0.4) 100%)',
+      backdropFilter: 'blur(20px)',
+      border: darkMode 
+        ? '1px solid rgba(255, 255, 255, 0.1)' 
+        : '1px solid rgba(255, 255, 255, 0.8)',
+      borderTop: 'none',
+      boxShadow: darkMode 
+        ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+        : '0 8px 32px rgba(0, 0, 0, 0.1)',
+      color: darkMode ? '#fff' : '#1976d2',
     }}>
       <Toolbar sx={{
         minHeight: { xs: '64px !important', sm: '80px !important' },
@@ -61,9 +69,17 @@ export default function DashboardAppBar({ darkMode, toggleDarkMode, setOpenPassw
         <Typography
           variant="h6"
           sx={{
-            fontWeight: 600,
-            color: darkMode ? '#fff' : 'inherit',
+            fontWeight: 700,
+            background: darkMode 
+              ? 'linear-gradient(45deg, #64b5f6, #90caf9, #42a5f5)'
+              : 'linear-gradient(45deg, #1976d2, #42a5f5, #1e88e5)',
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            textShadow: 'none',
             ml: '20px',
+            fontSize: '1.4rem',
+            letterSpacing: '-0.02em',
           }}
         >
           {menuItems.find(item => item.path === pathname)?.text || 'Dashboard'}
@@ -74,12 +90,32 @@ export default function DashboardAppBar({ darkMode, toggleDarkMode, setOpenPassw
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <IconButton
             onClick={handleClick}
-            sx={{ color: 'inherit' }}
+            sx={{ 
+              color: 'inherit',
+              background: darkMode 
+                ? 'rgba(100, 181, 246, 0.1)' 
+                : 'rgba(25, 118, 210, 0.1)',
+              backdropFilter: 'blur(10px)',
+              border: darkMode 
+                ? '1px solid rgba(144, 202, 249, 0.3)' 
+                : '1px solid rgba(25, 118, 210, 0.2)',
+              borderRadius: '12px',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                background: darkMode 
+                  ? 'rgba(144, 202, 249, 0.2)' 
+                  : 'rgba(25, 118, 210, 0.15)',
+                transform: 'translateY(-2px)',
+                boxShadow: darkMode 
+                  ? '0 8px 25px rgba(100, 181, 246, 0.3)' 
+                  : '0 8px 25px rgba(25, 118, 210, 0.2)',
+              }
+            }}
             aria-controls={open ? 'settings-menu' : undefined}
             aria-haspopup="true"
             aria-expanded={open ? 'true' : undefined}
           >
-            <SettingsIcon sx={{ fontSize: 40 }} />
+            <SettingsIcon sx={{ fontSize: 24 }} />
           </IconButton>
           <Menu
             id="settings-menu"
@@ -91,27 +127,64 @@ export default function DashboardAppBar({ darkMode, toggleDarkMode, setOpenPassw
             }}
             sx={{
               '& .MuiPaper-root': {
-                borderRadius: '12px',
+                borderRadius: '16px',
                 minWidth: '200px',
-                bgcolor: darkMode ? '#1a1a1a' : 'white',
-                color: darkMode ? '#fff' : 'inherit',
+                background: darkMode 
+                  ? 'linear-gradient(135deg, rgba(30, 30, 30, 0.95) 0%, rgba(60, 60, 60, 0.8) 100%)'
+                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 250, 0.8) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: darkMode 
+                  ? '1px solid rgba(255, 255, 255, 0.1)' 
+                  : '1px solid rgba(0, 0, 0, 0.1)',
+                boxShadow: darkMode 
+                  ? '0 8px 32px rgba(0, 0, 0, 0.4)' 
+                  : '0 8px 32px rgba(0, 0, 0, 0.1)',
+                color: darkMode ? '#fff' : '#1976d2',
               }
             }}
           >
-            <MenuItem onClick={toggleDarkMode}>
-              <ListItemIcon sx={{ color: darkMode ? '#fff' : 'inherit' }}>
+            <MenuItem 
+              onClick={toggleDarkMode}
+              sx={{
+                borderRadius: '8px',
+                margin: '4px',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  background: darkMode 
+                    ? 'rgba(100, 181, 246, 0.1)' 
+                    : 'rgba(25, 118, 210, 0.08)',
+                }
+              }}
+            >
+              <ListItemIcon sx={{ color: darkMode ? '#90caf9' : '#1976d2' }}>
                 {darkMode ? <LightModeIcon fontSize="small" /> : <DarkModeIcon fontSize="small" />}
               </ListItemIcon>
-              <ListItemText>{darkMode ? 'Light Mode' : 'Dark Mode'}</ListItemText>
+              <ListItemText sx={{ color: darkMode ? '#fff' : '#1976d2' }}>
+                {darkMode ? 'Light Mode' : 'Dark Mode'}
+              </ListItemText>
             </MenuItem>
-            <MenuItem onClick={() => {
-              setOpenPasswordDialog(true)
-              handleClose()
-            }}>
-              <ListItemIcon sx={{ color: darkMode ? '#fff' : 'inherit' }}>
+            <MenuItem 
+              onClick={() => {
+                setOpenPasswordDialog(true)
+                handleClose()
+              }}
+              sx={{
+                borderRadius: '8px',
+                margin: '4px',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  background: darkMode 
+                    ? 'rgba(100, 181, 246, 0.1)' 
+                    : 'rgba(25, 118, 210, 0.08)',
+                }
+              }}
+            >
+              <ListItemIcon sx={{ color: darkMode ? '#90caf9' : '#1976d2' }}>
                 <SettingsIcon fontSize="small" />
               </ListItemIcon>
-              <ListItemText>Ganti Password</ListItemText>
+              <ListItemText sx={{ color: darkMode ? '#fff' : '#1976d2' }}>
+                Ganti Password
+              </ListItemText>
             </MenuItem>
           </Menu>
         </Box>

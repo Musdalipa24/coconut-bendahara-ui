@@ -39,12 +39,19 @@ function CardHeaderComponent({ title, subtitle, action, ...props }) {
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'space-between',
-      mb: subtitle ? 0.5 : 2
+      mb: subtitle ? 0.5 : 2,
+      ...props.sx
     }}>
       <Box>
-        <Typography variant="h6" sx={{ fontWeight: 600, color: colors.text.primary }}>
-          {title}
-        </Typography>
+        {typeof title === 'string' ? (
+          <Typography variant="h6" sx={{ fontWeight: 600, color: colors.text.primary }}>
+            {title}
+          </Typography>
+        ) : (
+          <Box sx={{ fontWeight: 600, color: colors.text.primary }}>
+            {title}
+          </Box>
+        )}
         {subtitle && (
           <Typography variant="body2" sx={{ color: colors.text.secondary, mt: 0.5 }}>
             {subtitle}

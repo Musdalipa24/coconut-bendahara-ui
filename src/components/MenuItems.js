@@ -16,51 +16,96 @@ export default function MenuItems({ darkMode, miniSidenav }) {
                     href={item.path}
                     selected={pathname === item.path}
                     sx={{
-                        borderRadius: '12px',
-                        mb: 1,
-                        py: 1,
-                        color: darkMode ? '#fff' : 'inherit',
-                        transition: 'background-color 0.2s, color 0.2s',
+                        borderRadius: '16px',
+                        mb: 1.5,
+                        py: 1.5,
+                        px: 2,
+                        color: darkMode ? '#fff' : '#1976d2',
+                        transition: 'all 0.3s ease',
                         cursor: 'pointer',
+                        position: 'relative',
+                        overflow: 'hidden',
+                        background: pathname === item.path 
+                            ? (darkMode 
+                                ? 'linear-gradient(135deg, rgba(100, 181, 246, 0.3) 0%, rgba(144, 202, 249, 0.2) 100%)'
+                                : 'linear-gradient(135deg, rgba(25, 118, 210, 0.15) 0%, rgba(66, 165, 245, 0.1) 100%)')
+                            : 'transparent',
+                        border: pathname === item.path 
+                            ? (darkMode 
+                                ? '1px solid rgba(144, 202, 249, 0.3)' 
+                                : '1px solid rgba(25, 118, 210, 0.2)')
+                            : '1px solid transparent',
                         '&:hover': {
-                            bgcolor: darkMode ? 'rgba(255,255,255,0.15)' : '#388e3c',
-                            color: '#fff',
+                            background: darkMode 
+                                ? 'linear-gradient(135deg, rgba(100, 181, 246, 0.2) 0%, rgba(144, 202, 249, 0.1) 100%)'
+                                : 'linear-gradient(135deg, rgba(25, 118, 210, 0.1) 0%, rgba(66, 165, 245, 0.05) 100%)',
+                            border: darkMode 
+                                ? '1px solid rgba(144, 202, 249, 0.3)' 
+                                : '1px solid rgba(25, 118, 210, 0.2)',
+                            transform: 'translateX(4px)',
+                            boxShadow: darkMode 
+                                ? '0 4px 15px rgba(100, 181, 246, 0.2)' 
+                                : '0 4px 15px rgba(25, 118, 210, 0.1)',
                             '& .MuiListItemIcon-root': {
-                                color: '#fff',
+                                color: darkMode ? '#90caf9' : '#1976d2',
+                                transform: 'scale(1.1)',
                             },
-                        },
-                        '&:active, &:focus': {
-                            bgcolor: darkMode ? 'rgba(255,255,255,0.25)' : '#1b5e20',
-                            color: '#fff',
-                            '& .MuiListItemIcon-root': {
-                                color: '#fff',
-                            },
-                            '&::after': {
-                                content: '""',
-                                position: 'absolute',
-                                left: 0,
-                                top: 8,
-                                bottom: 8,
-                                width: '4px',
-                                borderRadius: '4px',
-                                background: darkMode ? '#fff' : '#1b5e20',
-                                transition: 'background 0.2s',
+                            '& .MuiListItemText-root': {
+                                color: darkMode ? '#90caf9' : '#1976d2',
                             },
                         },
                         '&.Mui-selected': {
-                            bgcolor: darkMode ? 'rgba(255, 255, 255, 0.1)' : '#4caf50',
-                            color: '#fff',
+                            background: darkMode 
+                                ? 'linear-gradient(135deg, rgba(100, 181, 246, 0.3) 0%, rgba(144, 202, 249, 0.2) 100%)'
+                                : 'linear-gradient(135deg, rgba(25, 118, 210, 0.15) 0%, rgba(66, 165, 245, 0.1) 100%)',
+                            border: darkMode 
+                                ? '1px solid rgba(144, 202, 249, 0.4)' 
+                                : '1px solid rgba(25, 118, 210, 0.3)',
                             '& .MuiListItemIcon-root': {
-                                color: '#fff',
+                                color: darkMode ? '#64b5f6' : '#1976d2',
+                            },
+                            '& .MuiListItemText-root': {
+                                color: darkMode ? '#64b5f6' : '#1976d2',
+                                fontWeight: 600,
+                            },
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                left: 0,
+                                top: 0,
+                                bottom: 0,
+                                width: '4px',
+                                borderRadius: '0 4px 4px 0',
+                                background: darkMode 
+                                    ? 'linear-gradient(135deg, #64b5f6, #90caf9)'
+                                    : 'linear-gradient(135deg, #1976d2, #42a5f5)',
                             },
                         },
                     }}
                 >
-                    <ListItemIcon sx={{ minWidth: 40, color: darkMode ? '#fff' : 'inherit' }}>
+                    <ListItemIcon sx={{ 
+                        minWidth: 40, 
+                        color: pathname === item.path 
+                            ? (darkMode ? '#64b5f6' : '#1976d2')
+                            : (darkMode ? '#b0b0b0' : '#666666'),
+                        transition: 'all 0.3s ease',
+                    }}>
                         {item.icon}
                     </ListItemIcon>
                     {!miniSidenav && (
-                        <ListItemText primary={item.text} />
+                        <ListItemText 
+                            primary={item.text} 
+                            sx={{
+                                '& .MuiListItemText-primary': {
+                                    fontWeight: pathname === item.path ? 600 : 500,
+                                    fontSize: '0.95rem',
+                                    color: pathname === item.path 
+                                        ? (darkMode ? '#64b5f6' : '#1976d2')
+                                        : (darkMode ? '#fff' : '#1976d2'),
+                                    transition: 'all 0.3s ease',
+                                }
+                            }}
+                        />
                     )}
                 </ListItem>
             ))}

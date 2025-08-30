@@ -11,9 +11,9 @@ import {
   Button,
   CircularProgress,
   MenuItem,
-  Box
+  Box,
+  useTheme
 } from '@mui/material'
-import Image from 'next/image'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import { Add as AddIcon, Edit as EditIcon, Save as SaveIcon } from '@mui/icons-material'
 import { useState, useEffect } from 'react'
@@ -25,10 +25,28 @@ export default function PemasukanFormDialog({
   formData,
   setFormData,
   handleInputChange,
+  handleNominalBlur,
   handleSave,
   loading
 }) {
+  const theme = useTheme()
+  const isDarkMode = theme.palette.mode === 'dark'
   const [previewUrl, setPreviewUrl] = useState('');
+
+  // Set default datetime to current time when opening for new entry
+  useEffect(() => {
+    if (showModal && !editingId && !formData.tanggal) {
+      const now = new Date();
+      // Format to datetime-local input format (YYYY-MM-DDTHH:mm)
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const formatted = `${year}-${month}-${day}T${hours}:${minutes}`;
+      setFormData(prev => ({ ...prev, tanggal: formatted }));
+    }
+  }, [showModal, editingId, formData.tanggal, setFormData]);
 
   // Update preview URL when a new file is selected
   useEffect(() => {
@@ -36,8 +54,12 @@ export default function PemasukanFormDialog({
       const url = URL.createObjectURL(formData.nota);
       setPreviewUrl(url);
       return () => URL.revokeObjectURL(url);
+    } else if (formData.nota && typeof formData.nota === 'string') {
+      // If it's a string (file path from server), construct full URL
+      const baseUrl = process.env.NEXT_PUBLIC_UPLOAD_URL || 'http://localhost:8087/uploads/';
+      setPreviewUrl(`${baseUrl}${formData.nota}`);
     } else {
-      setPreviewUrl(formData.nota || '');
+      setPreviewUrl('');
     }
   }, [formData.nota]);
 
@@ -67,12 +89,35 @@ export default function PemasukanFormDialog({
       fullWidth
       PaperProps={{
         sx: {
-          borderRadius: '16px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-          background: 'linear-gradient(to bottom, #ffffff, #f8f9fa)',
+          borderRadius: '20px',
+          background: isDarkMode 
+            ? 'linear-gradient(135deg, rgba(30, 30, 30, 0.9) 0%, rgba(45, 45, 45, 0.95) 50%, rgba(25, 25, 25, 0.9) 100%)'
+            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.95) 50%, rgba(241, 245, 249, 0.9) 100%)',
+          backdropFilter: 'blur(20px)',
+          border: isDarkMode 
+            ? '1px solid rgba(255, 255, 255, 0.1)'
+            : '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: isDarkMode
+            ? '0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            : '0 8px 32px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
           maxHeight: '90vh',
           margin: '16px',
-          width: 'calc(100% - 32px)'
+          width: 'calc(100% - 32px)',
+          overflow: 'hidden',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: isDarkMode
+              ? 'linear-gradient(45deg, rgba(76, 175, 80, 0.1) 0%, rgba(139, 195, 74, 0.05) 100%)'
+              : 'linear-gradient(45deg, rgba(76, 175, 80, 0.05) 0%, rgba(139, 195, 74, 0.02) 100%)',
+            pointerEvents: 'none',
+            zIndex: -1
+          }
         }
       }}
     >
@@ -80,16 +125,24 @@ export default function PemasukanFormDialog({
         pb: 2,
         pt: 3,
         px: 3,
-        borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
-        background: 'linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%)',
-        color: 'white',
+        borderBottom: isDarkMode 
+          ? '1px solid rgba(255, 255, 255, 0.1)'
+          : '1px solid rgba(0, 0, 0, 0.05)',
+        background: isDarkMode
+          ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.3) 0%, rgba(139, 195, 74, 0.4) 50%, rgba(102, 187, 106, 0.3) 100%)'
+          : 'linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(139, 195, 74, 0.15) 50%, rgba(102, 187, 106, 0.1) 100%)',
+        backdropFilter: 'blur(10px)',
+        color: isDarkMode ? '#81c784' : '#2e7d32',
         display: 'flex',
         alignItems: 'center',
         gap: 1,
+        textShadow: isDarkMode 
+          ? '0 2px 10px rgba(129, 199, 132, 0.3)' 
+          : '0 2px 10px rgba(46, 125, 50, 0.2)',
         '& .MuiTypography-root': {
           fontSize: '1.5rem',
           fontWeight: 600,
-          textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+          letterSpacing: '0.5px'
         }
       }}>
         {editingId ? (
@@ -127,33 +180,79 @@ export default function PemasukanFormDialog({
         },
       }}>
         <Box sx={{ mb: 2 }}>
-          <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 500, color: '#2e7d32' }}>
+          <Typography variant="subtitle1" sx={{ 
+            mb: 1, 
+            fontWeight: 500, 
+            color: isDarkMode ? '#81c784' : '#2e7d32'
+          }}>
             Informasi Pemasukan
           </Typography>
-          <Divider />
+          <Divider sx={{
+            borderColor: isDarkMode ? 'rgba(129, 199, 132, 0.2)' : 'rgba(46, 125, 50, 0.2)'
+          }} />
         </Box>
         <TextField
           label="Tanggal dan Waktu"
           name="tanggal"
           type="datetime-local"
-          value={formData.tanggal}
+          value={formData.tanggal || ''}
           onChange={handleInputChange}
           fullWidth
           required
-          InputLabelProps={{ shrink: true }}
+          InputLabelProps={{ 
+            shrink: true,
+            style: { 
+              fontWeight: 500, 
+              color: isDarkMode ? '#a5d6a7' : '#2e7d32'
+            }
+          }}
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: '12px',
-              '&:hover fieldset': {
-                borderColor: '#2e7d32',
+              background: isDarkMode
+                ? 'rgba(255, 255, 255, 0.05)'
+                : 'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(10px)',
+              border: isDarkMode 
+                ? '1px solid rgba(129, 199, 132, 0.2)'
+                : '1px solid rgba(46, 125, 50, 0.2)',
+              '& fieldset': {
+                border: 'none'
               },
-              '&.Mui-focused fieldset': {
-                borderColor: '#2e7d32',
-                borderWidth: '2px',
+              '&:hover': {
+                background: isDarkMode
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(255, 255, 255, 0.9)',
+                border: isDarkMode 
+                  ? '1px solid rgba(129, 199, 132, 0.3)'
+                  : '1px solid rgba(46, 125, 50, 0.3)',
+              },
+              '&.Mui-focused': {
+                background: isDarkMode
+                  ? 'rgba(255, 255, 255, 0.1)'
+                  : 'rgba(255, 255, 255, 1)',
+                border: isDarkMode 
+                  ? '2px solid rgba(129, 199, 132, 0.5)'
+                  : '2px solid rgba(46, 125, 50, 0.5)',
+                boxShadow: isDarkMode
+                  ? '0 0 0 2px rgba(129, 199, 132, 0.2)'
+                  : '0 0 0 2px rgba(46, 125, 50, 0.1)'
               }
+            },
+            '& .MuiOutlinedInput-input': {
+              color: isDarkMode ? '#ffffff' : '#212121'
+            },
+            '& input[type="datetime-local"]': {
+              fontSize: '1rem',
+              padding: '16.5px 14px',
+              colorScheme: isDarkMode ? 'dark' : 'light'
             }
           }}
-          inputProps={{ 'aria-label': 'Tanggal dan waktu pemasukan' }}
+          inputProps={{ 
+            'aria-label': 'Tanggal dan waktu pemasukan',
+            step: '60' // Set step to 1 minute intervals
+          }}
+          helperText="Pilih tanggal dan waktu pemasukan"
         />
         <TextField
           label="Jumlah"
@@ -161,16 +260,65 @@ export default function PemasukanFormDialog({
           type="text"
           value={formData.nominal ? parseInt(formData.nominal).toLocaleString('id-ID') : ''}
           onChange={handleInputChange}
+          onBlur={handleNominalBlur}
           fullWidth
           required
           InputProps={{
             startAdornment: (
-              <Typography sx={{ mr: 1, color: '#666', fontWeight: 500 }}>
+              <Typography sx={{ 
+                mr: 1, 
+                color: isDarkMode ? '#b0bec5' : '#666', 
+                fontWeight: 500 
+              }}>
                 Rp
               </Typography>
             )
           }}
+          InputLabelProps={{
+            style: { 
+              color: isDarkMode ? '#a5d6a7' : '#2e7d32',
+              fontWeight: 500
+            }
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              borderRadius: '12px',
+              background: isDarkMode
+                ? 'rgba(255, 255, 255, 0.05)'
+                : 'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(10px)',
+              border: isDarkMode 
+                ? '1px solid rgba(129, 199, 132, 0.2)'
+                : '1px solid rgba(46, 125, 50, 0.2)',
+              '& fieldset': {
+                border: 'none'
+              },
+              '&:hover': {
+                background: isDarkMode
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(255, 255, 255, 0.9)',
+                border: isDarkMode 
+                  ? '1px solid rgba(129, 199, 132, 0.3)'
+                  : '1px solid rgba(46, 125, 50, 0.3)',
+              },
+              '&.Mui-focused': {
+                background: isDarkMode
+                  ? 'rgba(255, 255, 255, 0.1)'
+                  : 'rgba(255, 255, 255, 1)',
+                border: isDarkMode 
+                  ? '2px solid rgba(129, 199, 132, 0.5)'
+                  : '2px solid rgba(46, 125, 50, 0.5)',
+                boxShadow: isDarkMode
+                  ? '0 0 0 2px rgba(129, 199, 132, 0.2)'
+                  : '0 0 0 2px rgba(46, 125, 50, 0.1)'
+              }
+            },
+            '& .MuiOutlinedInput-input': {
+              color: isDarkMode ? '#ffffff' : '#212121'
+            }
+          }}
           placeholder="Contoh: 1.000.000"
+          helperText="Nominal minimal Rp. 1.000"
           inputProps={{ 'aria-label': 'Jumlah pemasukan' }}
         />
         <TextField
@@ -181,16 +329,47 @@ export default function PemasukanFormDialog({
           onChange={handleInputChange}
           fullWidth
           required
+          InputLabelProps={{
+            style: { 
+              color: isDarkMode ? '#a5d6a7' : '#2e7d32',
+              fontWeight: 500
+            }
+          }}
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: '12px',
-              '&:hover fieldset': {
-                borderColor: '#2e7d32',
+              background: isDarkMode
+                ? 'rgba(255, 255, 255, 0.05)'
+                : 'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(10px)',
+              border: isDarkMode 
+                ? '1px solid rgba(129, 199, 132, 0.2)'
+                : '1px solid rgba(46, 125, 50, 0.2)',
+              '& fieldset': {
+                border: 'none'
               },
-              '&.Mui-focused fieldset': {
-                borderColor: '#2e7d32',
-                borderWidth: '2px',
+              '&:hover': {
+                background: isDarkMode
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(255, 255, 255, 0.9)',
+                border: isDarkMode 
+                  ? '1px solid rgba(129, 199, 132, 0.3)'
+                  : '1px solid rgba(46, 125, 50, 0.3)',
+              },
+              '&.Mui-focused': {
+                background: isDarkMode
+                  ? 'rgba(255, 255, 255, 0.1)'
+                  : 'rgba(255, 255, 255, 1)',
+                border: isDarkMode 
+                  ? '2px solid rgba(129, 199, 132, 0.5)'
+                  : '2px solid rgba(46, 125, 50, 0.5)',
+                boxShadow: isDarkMode
+                  ? '0 0 0 2px rgba(129, 199, 132, 0.2)'
+                  : '0 0 0 2px rgba(46, 125, 50, 0.1)'
               }
+            },
+            '& .MuiOutlinedInput-input': {
+              color: isDarkMode ? '#ffffff' : '#212121'
             }
           }}
           inputProps={{ 'aria-label': 'Kategori pemasukan' }}
@@ -211,16 +390,47 @@ export default function PemasukanFormDialog({
             fullWidth
             required
             placeholder="Masukkan kategori kustom"
+            InputLabelProps={{
+              style: { 
+                color: isDarkMode ? '#a5d6a7' : '#2e7d32',
+                fontWeight: 500
+              }
+            }}
             sx={{
               '& .MuiOutlinedInput-root': {
                 borderRadius: '12px',
-                '&:hover fieldset': {
-                  borderColor: '#2e7d32',
+                background: isDarkMode
+                  ? 'rgba(255, 255, 255, 0.05)'
+                  : 'rgba(255, 255, 255, 0.8)',
+                backdropFilter: 'blur(10px)',
+                border: isDarkMode 
+                  ? '1px solid rgba(129, 199, 132, 0.2)'
+                  : '1px solid rgba(46, 125, 50, 0.2)',
+                '& fieldset': {
+                  border: 'none'
                 },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#2e7d32',
-                  borderWidth: '2px',
+                '&:hover': {
+                  background: isDarkMode
+                    ? 'rgba(255, 255, 255, 0.08)'
+                    : 'rgba(255, 255, 255, 0.9)',
+                  border: isDarkMode 
+                    ? '1px solid rgba(129, 199, 132, 0.3)'
+                    : '1px solid rgba(46, 125, 50, 0.3)',
+                },
+                '&.Mui-focused': {
+                  background: isDarkMode
+                    ? 'rgba(255, 255, 255, 0.1)'
+                    : 'rgba(255, 255, 255, 1)',
+                  border: isDarkMode 
+                    ? '2px solid rgba(129, 199, 132, 0.5)'
+                    : '2px solid rgba(46, 125, 50, 0.5)',
+                  boxShadow: isDarkMode
+                    ? '0 0 0 2px rgba(129, 199, 132, 0.2)'
+                    : '0 0 0 2px rgba(46, 125, 50, 0.1)'
                 }
+              },
+              '& .MuiOutlinedInput-input': {
+                color: isDarkMode ? '#ffffff' : '#212121'
               }
             }}
             inputProps={{ 'aria-label': 'Kategori kustom pemasukan' }}
@@ -236,16 +446,47 @@ export default function PemasukanFormDialog({
           multiline
           rows={4}
           placeholder="Masukkan detail keterangan pemasukan"
+          InputLabelProps={{
+            style: { 
+              color: isDarkMode ? '#a5d6a7' : '#2e7d32',
+              fontWeight: 500
+            }
+          }}
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: '12px',
-              '&:hover fieldset': {
-                borderColor: '#2e7d32',
+              background: isDarkMode
+                ? 'rgba(255, 255, 255, 0.05)'
+                : 'rgba(255, 255, 255, 0.8)',
+              backdropFilter: 'blur(10px)',
+              border: isDarkMode 
+                ? '1px solid rgba(129, 199, 132, 0.2)'
+                : '1px solid rgba(46, 125, 50, 0.2)',
+              '& fieldset': {
+                border: 'none'
               },
-              '&.Mui-focused fieldset': {
-                borderColor: '#2e7d32',
-                borderWidth: '2px',
+              '&:hover': {
+                background: isDarkMode
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(255, 255, 255, 0.9)',
+                border: isDarkMode 
+                  ? '1px solid rgba(129, 199, 132, 0.3)'
+                  : '1px solid rgba(46, 125, 50, 0.3)',
+              },
+              '&.Mui-focused': {
+                background: isDarkMode
+                  ? 'rgba(255, 255, 255, 0.1)'
+                  : 'rgba(255, 255, 255, 1)',
+                border: isDarkMode 
+                  ? '2px solid rgba(129, 199, 132, 0.5)'
+                  : '2px solid rgba(46, 125, 50, 0.5)',
+                boxShadow: isDarkMode
+                  ? '0 0 0 2px rgba(129, 199, 132, 0.2)'
+                  : '0 0 0 2px rgba(46, 125, 50, 0.1)'
               }
+            },
+            '& .MuiOutlinedInput-input': {
+              color: isDarkMode ? '#ffffff' : '#212121'
             }
           }}
           inputProps={{ 'aria-label': 'Keterangan pemasukan' }}
@@ -256,7 +497,7 @@ export default function PemasukanFormDialog({
             sx={{
               mb: 2,
               fontWeight: 500,
-              color: theme => theme.palette.text.primary,
+              color: isDarkMode ? '#81c784' : '#2e7d32',
               display: 'flex',
               alignItems: 'center',
               gap: 0.5
@@ -268,15 +509,29 @@ export default function PemasukanFormDialog({
           <Box
             sx={{
               border: '2px dashed',
-              borderColor: theme => theme.palette.divider,
+              borderColor: isDarkMode 
+                ? 'rgba(129, 199, 132, 0.3)' 
+                : 'rgba(46, 125, 50, 0.3)',
               borderRadius: '12px',
               p: 4,
               textAlign: 'center',
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: 'all 0.3s ease',
+              background: isDarkMode
+                ? 'rgba(255, 255, 255, 0.02)'
+                : 'rgba(255, 255, 255, 0.5)',
+              backdropFilter: 'blur(10px)',
               '&:hover': {
-                borderColor: '#2e7d32',
-                bgcolor: 'rgba(46, 125, 50, 0.04)'
+                borderColor: isDarkMode 
+                  ? 'rgba(129, 199, 132, 0.5)' 
+                  : 'rgba(46, 125, 50, 0.5)',
+                background: isDarkMode
+                  ? 'rgba(129, 199, 132, 0.05)'
+                  : 'rgba(46, 125, 50, 0.04)',
+                transform: 'translateY(-2px)',
+                boxShadow: isDarkMode
+                  ? '0 4px 16px rgba(129, 199, 132, 0.1)'
+                  : '0 4px 16px rgba(46, 125, 50, 0.1)'
               }
             }}
           >
@@ -292,16 +547,19 @@ export default function PemasukanFormDialog({
             <label htmlFor="nota-upload" style={{ cursor: 'pointer' }}>
               {previewUrl ? (
                 <Box sx={{ position: 'relative' }}>
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={previewUrl}
                     alt="Preview Nota"
-                    width={200} // Tentukan lebar
-                    height={200} // Tentukan tinggi
                     style={{
                       maxWidth: '100%',
                       maxHeight: '200px',
                       borderRadius: '8px',
                       objectFit: 'contain'
+                    }}
+                    onError={(e) => {
+                      console.error('Error loading image:', e);
+                      e.target.style.display = 'none';
                     }}
                   />
                   <Typography
@@ -317,11 +575,20 @@ export default function PemasukanFormDialog({
                 </Box>
               ) : (
                 <Box sx={{ py: 3 }}>
-                  <ReceiptIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-                  <Typography variant="body1" sx={{ mb: 1 }}>
+                  <ReceiptIcon sx={{ 
+                    fontSize: 48, 
+                    color: isDarkMode ? '#90a4ae' : '#616161', 
+                    mb: 2 
+                  }} />
+                  <Typography variant="body1" sx={{ 
+                    mb: 1,
+                    color: isDarkMode ? '#ffffff' : '#212121'
+                  }}>
                     Klik atau seret file nota ke sini
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant="caption" sx={{
+                    color: isDarkMode ? '#b0bec5' : '#666'
+                  }}>
                     Format yang didukung: JPG, PNG, JPEG (Maks. 5MB)
                   </Typography>
                 </Box>
@@ -333,24 +600,44 @@ export default function PemasukanFormDialog({
       <DialogActions sx={{
         px: 4,
         py: 3,
-        borderTop: '1px solid rgba(0, 0, 0, 0.1)',
+        borderTop: isDarkMode 
+          ? '1px solid rgba(255, 255, 255, 0.1)'
+          : '1px solid rgba(0, 0, 0, 0.05)',
         gap: 2,
-        bgcolor: 'rgba(0, 0, 0, 0.02)'
+        background: isDarkMode
+          ? 'rgba(255, 255, 255, 0.02)'
+          : 'rgba(0, 0, 0, 0.02)',
+        backdropFilter: 'blur(10px)'
       }}>
         <Button
           onClick={() => setShowModal(false)}
           variant="outlined"
           sx={{
-            borderRadius: '10px',
-            borderColor: '#666',
-            color: '#666',
-            '&:hover': {
-              borderColor: '#2e7d32',
-              color: '#2e7d32',
-              bgcolor: 'rgba(46, 125, 50, 0.04)'
-            },
+            borderRadius: '12px',
+            background: isDarkMode
+              ? 'rgba(255, 255, 255, 0.05)'
+              : 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+            border: isDarkMode 
+              ? '1px solid rgba(255, 255, 255, 0.2)'
+              : '1px solid rgba(0, 0, 0, 0.2)',
+            color: isDarkMode ? '#ffffff' : '#666',
             px: 3,
-            py: 1
+            py: 1,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              background: isDarkMode
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(255, 255, 255, 0.9)',
+              border: isDarkMode 
+                ? '1px solid rgba(129, 199, 132, 0.3)'
+                : '1px solid rgba(46, 125, 50, 0.3)',
+              color: isDarkMode ? '#81c784' : '#2e7d32',
+              transform: 'translateY(-2px)',
+              boxShadow: isDarkMode
+                ? '0 4px 16px rgba(255, 255, 255, 0.1)'
+                : '0 4px 16px rgba(46, 125, 50, 0.1)'
+            }
           }}
         >
           Batal
@@ -360,14 +647,40 @@ export default function PemasukanFormDialog({
           variant="contained"
           disabled={loading}
           sx={{
-            borderRadius: '10px',
-            bgcolor: '#2e7d32',
-            '&:hover': {
-              bgcolor: '#1b5e20'
-            },
+            borderRadius: '12px',
+            background: isDarkMode
+              ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.8) 0%, rgba(139, 195, 74, 0.9) 50%, rgba(102, 187, 106, 0.8) 100%)'
+              : 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(139, 195, 74, 1) 50%, rgba(102, 187, 106, 0.9) 100%)',
+            backdropFilter: 'blur(10px)',
+            border: isDarkMode 
+              ? '1px solid rgba(76, 175, 80, 0.3)'
+              : '1px solid rgba(76, 175, 80, 0.2)',
+            boxShadow: isDarkMode
+              ? '0 4px 16px rgba(76, 175, 80, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+              : '0 4px 16px rgba(76, 175, 80, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+            color: '#ffffff',
+            textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
             px: 3,
             py: 1,
-            gap: 1
+            gap: 1,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              transform: 'translateY(-2px)',
+              background: isDarkMode
+                ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.9) 0%, rgba(139, 195, 74, 1) 50%, rgba(102, 187, 106, 0.9) 100%)'
+                : 'linear-gradient(135deg, rgba(76, 175, 80, 1) 0%, rgba(139, 195, 74, 1.1) 50%, rgba(102, 187, 106, 1) 100%)',
+              boxShadow: isDarkMode
+                ? '0 6px 20px rgba(76, 175, 80, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+                : '0 6px 20px rgba(76, 175, 80, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
+            },
+            '&:disabled': {
+              background: isDarkMode
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(0, 0, 0, 0.1)',
+              color: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+              transform: 'none',
+              boxShadow: 'none'
+            }
           }}
         >
           {loading ? (

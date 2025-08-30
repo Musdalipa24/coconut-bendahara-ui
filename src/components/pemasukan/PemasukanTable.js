@@ -17,7 +17,9 @@ import {
 import EditIcon from '@mui/icons-material/Edit'
 import DeleteIcon from '@mui/icons-material/Delete'
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance'
+import ReceiptIcon from '@mui/icons-material/Receipt'
 import { StyledCard } from './styles'
+import { useSoftUIController } from '@/context'
 
 export default function PemasukanTable({
   rows,
@@ -29,37 +31,151 @@ export default function PemasukanTable({
   handleChangeRowsPerPage,
   handleEdit,
   handleDelete,
+  handleShowNota, // Add this prop
   formatDateTime,
   formatCurrency
 }) {
+  const [controller] = useSoftUIController()
+  const { darkMode } = controller
+  const isDarkMode = darkMode
+
+  const tableHeaderStyle = {
+    backgroundColor: isDarkMode 
+      ? 'rgba(76, 175, 80, 0.1)' 
+      : 'rgba(46, 125, 50, 0.05)',
+    color: isDarkMode ? '#81c784' : '#2e7d32',
+    fontWeight: 600,
+  }
+
+  const getRowStyle = (index) => ({
+    backgroundColor: index % 2 === 0 
+      ? (isDarkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.8)')
+      : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(248, 249, 250, 0.8)'),
+    '&:hover': {
+      backgroundColor: isDarkMode 
+        ? 'rgba(76, 175, 80, 0.1)' 
+        : 'rgba(46, 125, 50, 0.05)',
+      '& .action-buttons': {
+        opacity: 1
+      }
+    }
+  })
+
   return (
     <StyledCard>
       <Box sx={{ p: 3 }}>
-        {/* 🔑 Tambahkan TableContainer agar bisa scroll horizontal */}
-        <TableContainer sx={{ overflowX: 'auto' }}>
+        {/* Table dengan Glass Morphism seperti IuranTable */}
+        <TableContainer 
+          component={Box} 
+          sx={{ 
+            overflowX: 'auto',
+            background: isDarkMode 
+              ? 'linear-gradient(135deg, rgba(30, 30, 30, 0.8) 0%, rgba(60, 60, 60, 0.4) 100%)'
+              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 249, 250, 0.4) 100%)',
+            backdropFilter: 'blur(20px)',
+            border: isDarkMode 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(255, 255, 255, 0.8)',
+            borderRadius: '20px',
+            boxShadow: isDarkMode 
+              ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+              : '0 8px 32px rgba(0, 0, 0, 0.1)',
+          }}
+        >
           <Table sx={{ minWidth: 650 }}>
             <TableHead>
-              <TableRow>
-                <TableCell align='center'>No</TableCell>
-                <TableCell>Tanggal</TableCell>
-                <TableCell>Kategori</TableCell>
-                <TableCell>Jumlah</TableCell>
-                <TableCell>Keterangan</TableCell>
-                <TableCell align="center">Aksi</TableCell>
+              <TableRow sx={{ 
+                background: isDarkMode 
+                  ? 'rgba(129, 199, 132, 0.1)' 
+                  : 'rgba(46, 125, 50, 0.05)',
+              }}>
+                <TableCell 
+                  align='center'
+                  sx={{ 
+                    color: isDarkMode ? '#81c784' : '#2e7d32',
+                    fontWeight: 600 
+                  }}
+                >
+                  No
+                </TableCell>
+                <TableCell sx={{ 
+                  color: isDarkMode ? '#81c784' : '#2e7d32',
+                  fontWeight: 600 
+                }}>
+                  Tanggal
+                </TableCell>
+                <TableCell sx={{ 
+                  color: isDarkMode ? '#81c784' : '#2e7d32',
+                  fontWeight: 600 
+                }}>
+                  Kategori
+                </TableCell>
+                <TableCell sx={{ 
+                  color: isDarkMode ? '#81c784' : '#2e7d32',
+                  fontWeight: 600 
+                }}>
+                  Jumlah
+                </TableCell>
+                <TableCell sx={{ 
+                  color: isDarkMode ? '#81c784' : '#2e7d32',
+                  fontWeight: 600 
+                }}>
+                  Keterangan
+                </TableCell>
+                <TableCell sx={{ 
+                  color: isDarkMode ? '#81c784' : '#2e7d32',
+                  fontWeight: 600 
+                }}>
+                  Nota
+                </TableCell>
+                <TableCell 
+                  align="center"
+                  sx={{ 
+                    color: isDarkMode ? '#81c784' : '#2e7d32',
+                    fontWeight: 600 
+                  }}
+                >
+                  Aksi
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                    <CircularProgress />
+                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                    <Box 
+                      sx={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '50%',
+                        background: isDarkMode 
+                          ? 'conic-gradient(from 0deg, #81c784, #a5d6a7, #66bb6a, #81c784)'
+                          : 'conic-gradient(from 0deg, #2e7d32, #4caf50, #388e3c, #2e7d32)',
+                        animation: 'spin 2s linear infinite',
+                        margin: '0 auto 8px',
+                        '@keyframes spin': {
+                          '0%': { transform: 'rotate(0deg)' },
+                          '100%': { transform: 'rotate(360deg)' },
+                        },
+                      }}
+                    />
+                    <Typography sx={{ color: isDarkMode ? '#81c784' : '#2e7d32' }}>
+                      Memuat data pemasukan...
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                    <AccountBalanceIcon sx={{ fontSize: 48, color: '#ccc', mb: 2 }} />
-                    <Typography variant="body1" color="textSecondary">
+                  <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                    <AccountBalanceIcon sx={{ 
+                      fontSize: 48, 
+                      color: isDarkMode ? '#4caf50' : '#81c784', 
+                      mb: 2 
+                    }} />
+                    <Typography 
+                      variant="body1" 
+                      sx={{ color: isDarkMode ? '#b0b0b0' : '#666666' }}
+                    >
                       Belum ada data pemasukan
                     </Typography>
                   </TableCell>
@@ -69,19 +185,33 @@ export default function PemasukanTable({
                   <TableRow
                     key={row.id}
                     sx={{
+                      backgroundColor: index % 2 === 0 
+                        ? (isDarkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.8)')
+                        : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(248, 249, 250, 0.8)'),
                       '&:hover': {
-                        bgcolor: '#f8f9fa',
+                        backgroundColor: isDarkMode 
+                          ? 'rgba(129, 199, 132, 0.1)' 
+                          : 'rgba(46, 125, 50, 0.05)',
                         '& .action-buttons': {
                           opacity: 1
                         }
                       }
                     }}
                   >
-                    <TableCell align='center'>{page * rowsPerPage + index + 1}</TableCell>
-                    <TableCell>{formatDateTime(row.tanggal)}</TableCell>
-                    <TableCell>{row.kategori}</TableCell>
+                    <TableCell 
+                      align='center'
+                      sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}
+                    >
+                      {page * rowsPerPage + index + 1}
+                    </TableCell>
+                    <TableCell sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+                      {formatDateTime(row.tanggal)}
+                    </TableCell>
+                    <TableCell sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+                      {row.kategori}
+                    </TableCell>
                     <TableCell sx={{
-                      color: '#2e7d32',
+                      color: isDarkMode ? '#81c784' : '#2e7d32',
                       fontWeight: 600,
                       whiteSpace: 'nowrap'
                     }}>
@@ -91,9 +221,29 @@ export default function PemasukanTable({
                       maxWidth: { xs: '120px', sm: '200px' },
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap'
+                      whiteSpace: 'nowrap',
+                      color: isDarkMode ? '#ffffff' : '#000000'
                     }}>
                       {row.keterangan}
+                    </TableCell>
+                    <TableCell>
+                      {row.nota ? (
+                        <IconButton
+                          onClick={() => handleShowNota(row.nota)}
+                          size="small"
+                          aria-label={`Lihat nota pemasukan nomor ${row.id}`}
+                          sx={{ color: isDarkMode ? '#81c784' : '#2e7d32' }}
+                        >
+                          <ReceiptIcon />
+                        </IconButton>
+                      ) : (
+                        <Typography 
+                          variant="caption" 
+                          sx={{ color: isDarkMode ? '#888888' : '#666666' }}
+                        >
+                          Tidak ada
+                        </Typography>
+                      )}
                     </TableCell>
                     <TableCell align="center">
                       <Box
@@ -111,7 +261,7 @@ export default function PemasukanTable({
                             size="small"
                             onClick={() => handleEdit(row)}
                             sx={{
-                              color: '#2e7d32',
+                              color: isDarkMode ? '#81c784' : '#2e7d32',
                               width: { xs: '35px', sm: '30px' },
                               height: { xs: '35px', sm: '30px' }
                             }}
@@ -124,7 +274,7 @@ export default function PemasukanTable({
                             size="small"
                             onClick={() => handleDelete(row.id)}
                             sx={{
-                              color: '#d32f2f',
+                              color: isDarkMode ? '#e57373' : '#d32f2f',
                               width: { xs: '35px', sm: '30px' },
                               height: { xs: '35px', sm: '30px' }
                             }}
@@ -153,9 +303,21 @@ export default function PemasukanTable({
           labelRowsPerPage="Baris per halaman:"
           labelDisplayedRows={({ from, to, count }) => `${from}-${to} dari ${count}`}
           sx={{
-            borderTop: '1px solid rgba(224, 224, 224, 1)',
+            borderTop: isDarkMode 
+              ? '1px solid rgba(255, 255, 255, 0.1)' 
+              : '1px solid rgba(224, 224, 224, 1)',
+            color: isDarkMode ? '#ffffff' : '#000000',
             '& .MuiTablePagination-toolbar': {
               padding: '16px'
+            },
+            '& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows': {
+              color: isDarkMode ? '#ffffff' : '#000000'
+            },
+            '& .MuiTablePagination-select': {
+              color: isDarkMode ? '#ffffff' : '#000000'
+            },
+            '& .MuiIconButton-root': {
+              color: isDarkMode ? '#ffffff' : '#000000'
             }
           }}
         />

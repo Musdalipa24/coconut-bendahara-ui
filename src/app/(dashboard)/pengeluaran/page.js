@@ -7,7 +7,11 @@ import {
   Snackbar,
   Slide,
   Alert,
-  IconButton
+  IconButton,
+  Container,
+  Typography,
+  ThemeProvider,
+  createTheme
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import {
@@ -19,8 +23,51 @@ import {
 } from '@/components/pengeluaran'
 import { pengeluaranService, UPLOAD_URL } from '@/services/pengeluaranService'
 import { laporanService } from '@/services/laporanService'
+import { useSoftUIController } from '@/context'
+
+// Custom theme untuk konsistensi
+const createCustomTheme = (isDark) => createTheme({
+  palette: {
+    mode: isDark ? 'dark' : 'light',
+    primary: {
+      main: isDark ? '#64b5f6' : '#1976d2',
+      light: isDark ? '#90caf9' : '#42a5f5',
+      dark: isDark ? '#1976d2' : '#0d47a1',
+    },
+    secondary: {
+      main: isDark ? '#f48fb1' : '#dc004e',
+    },
+    background: {
+      default: isDark ? '#0a0a0a' : '#f5f5f5',
+      paper: isDark ? '#1e1e1e' : '#ffffff',
+    },
+    text: {
+      primary: isDark ? '#ffffff' : '#000000',
+      secondary: isDark ? '#b0b0b0' : '#666666',
+    },
+  },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          background: isDark 
+            ? 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)'
+            : 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
+          backdropFilter: 'blur(10px)',
+          border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)',
+        }
+      }
+    }
+  }
+});
 
 export default function Pengeluaran() {
+  const [controller] = useSoftUIController()
+  const { darkMode } = controller
+  const isDarkMode = darkMode
+  
+  const customTheme = createCustomTheme(isDarkMode)
+  
   // State management
   const [rows, setRows] = useState([])
   const [showModal, setShowModal] = useState(false)
@@ -40,6 +87,7 @@ export default function Pengeluaran() {
   const [previewUrl, setPreviewUrl] = useState('')
   const [totalPengeluaran, setTotalPengeluaran] = useState(0)
   const [isLoadingTotal, setIsLoadingTotal] = useState(true)
+  const [currentSaldo, setCurrentSaldo] = useState(0)
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
     id: null
@@ -55,6 +103,7 @@ export default function Pengeluaran() {
   const [totalPages, setTotalPages] = useState(0)
 
   // Constants
+  const UPLOAD_URL = process.env.NEXT_PUBLIC_UPLOAD_URL || 'http://localhost:8087/uploads/'
   const timeRangeOptions = [
     { value: 'today', label: 'Hari Ini' },
     { value: 'yesterday', label: 'Kemarin' },
@@ -119,16 +168,22 @@ export default function Pengeluaran() {
     }).format(validAmount)
   }
 
-  const formatDateTime = (dateTimeString) => {
-    if (!dateTimeString) return '-'
+  const formatDateTime = (backendDateString) => {
+    if (!backendDateString) return '-'
     try {
-      const [datePart, timePart] = dateTimeString.split(' ')
+      const [datePart, timePart] = backendDateString.split(' ')
       const [day, month, year] = datePart.split('-')
       const [hours, minutes] = timePart.split(':')
-      return `${day}/${month}/${year} ${hours}:${minutes}`
+      return new Date(year, month - 1, day, hours, minutes).toLocaleString('id-ID', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
     } catch (e) {
       console.error('Error formatting date:', e)
-      return dateTimeString
+      return backendDateString
     }
   }
 
@@ -144,6 +199,26 @@ export default function Pengeluaran() {
       } else {
         response = await pengeluaranService.getPengeluaranByDateRange(start, end, page + 1, rowsPerPage)
       }
+      
+      // Handle response validation
+      if (!response || !response.data) {
+        console.warn('Response data tidak valid:', response)
+        setRows([])
+        setTotalItems(0)
+        setTotalPages(0)
+        return
+      }
+
+      // Handle empty data or null items
+      if (!response.data.items || !Array.isArray(response.data.items)) {
+        console.log('Data pengeluaran kosong atau format tidak valid')
+        setRows([])
+        setTotalItems(response.data.total_items || 0)
+        setTotalPages(response.data.total_pages || 0)
+        return
+      }
+
+      // Process data if available
       const pengeluaranData = response.data.items.map(item => ({
         id: item.id_pengeluaran,
         tanggal: item.tanggal,
@@ -151,13 +226,31 @@ export default function Pengeluaran() {
         keterangan: item.keterangan,
         nota: item.nota
       }))
+      
       setRows(pengeluaranData)
-      setTotalItems(response.data.total_items)
-      setTotalPages(response.data.total_pages)
+      setTotalItems(response.data.total_items || 0)
+      setTotalPages(response.data.total_pages || 0)
+      
     } catch (error) {
       console.error('Error fetching data:', error)
-      showSnackbar('Gagal mengambil data: ' + error.message, 'error')
+      
+      // Provide more user-friendly error messages
+      let errorMessage = 'Terjadi kesalahan saat mengambil data pengeluaran'
+      
+      if (error.message.includes('Network Error') || error.message.includes('fetch')) {
+        errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.'
+      } else if (error.message.includes('404')) {
+        errorMessage = 'Data pengeluaran tidak ditemukan.'
+      } else if (error.message.includes('500')) {
+        errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.'
+      } else if (error.message.includes("can't access property")) {
+        errorMessage = 'Belum ada data pengeluaran yang tersimpan.'
+      }
+      
+      showSnackbar(errorMessage, 'info')
       setRows([])
+      setTotalItems(0)
+      setTotalPages(0)
     } finally {
       setLoading(false)
     }
@@ -182,13 +275,30 @@ export default function Pengeluaran() {
       } catch (error) {
         console.error('Gagal mengambil total pengeluaran:', error)
         setTotalPengeluaran(0)
-        showSnackbar('Gagal memuat total pengeluaran', 'error')
+        // Don't show snackbar for total fetch errors when data is empty
+        // This prevents double error messages
+        if (!error.message.includes("can't access property") && !error.message.includes('null')) {
+          showSnackbar('Gagal memuat total pengeluaran', 'warning')
+        }
       } finally {
         setIsLoadingTotal(false)
       }
     }
     fetchTotal()
   }, [timeRange])
+
+  useEffect(() => {
+    const fetchSaldo = async () => {
+      try {
+        const saldo = await laporanService.getSaldo()
+        setCurrentSaldo(Number.isFinite(saldo) ? saldo : 0)
+      } catch (error) {
+        console.error('Error fetching saldo:', error)
+        setCurrentSaldo(0)
+      }
+    }
+    fetchSaldo()
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -226,6 +336,7 @@ export default function Pengeluaran() {
         showSnackbar('Nominal terlalu besar (maksimal puluhan milyar)', 'error')
         return
       }
+      // Simpan nilai terlebih dahulu, validasi minimal akan dilakukan saat save
       setFormData(prev => ({
         ...prev,
         [name]: numericValue
@@ -235,6 +346,12 @@ export default function Pengeluaran() {
         ...prev,
         [name]: value
       }))
+    }
+  }
+
+  const handleNominalBlur = () => {
+    if (formData.nominal && parseInt(formData.nominal) < 1000) {
+      showSnackbar('Nominal minimal adalah Rp. 1.000', 'warning')
     }
   }
 
@@ -251,23 +368,44 @@ export default function Pengeluaran() {
   }
 
   const handleEdit = (row) => {
-    const [datePart, timePart] = row.tanggal.split(' ')
-    const [day, month, year] = datePart.split('-')
-    const localDateTime = `${year}-${month}-${day}T${timePart}`
+    try {
+      let localDateTime = ''
+      if (row.tanggal) {
+        // Handle different date formats
+        if (row.tanggal.includes('T')) {
+          // Already in ISO format
+          localDateTime = row.tanggal.slice(0, 16)
+        } else if (row.tanggal.includes(' ')) {
+          // Format: DD-MM-YYYY HH:mm
+          const [datePart, timePart] = row.tanggal.split(' ')
+          const [day, month, year] = datePart.split('-')
+          localDateTime = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}`
+        } else {
+          // Just date
+          const date = new Date(row.tanggal)
+          if (!isNaN(date.getTime())) {
+            localDateTime = date.toISOString().slice(0, 16)
+          }
+        }
+      }
 
-    setEditingId(row.id)
-    setFormData({
-      tanggal: localDateTime,
-      nominal: row.nominal.toString(),
-      keterangan: row.keterangan,
-      nota: null
-    })
-    if (row.nota) {
-      setPreviewUrl(`${UPLOAD_URL}${row.nota}`)
-    } else {
-      setPreviewUrl('')
+      setEditingId(row.id)
+      setFormData({
+        tanggal: localDateTime,
+        nominal: row.nominal.toString(),
+        keterangan: row.keterangan,
+        nota: null // URL or null
+      })
+      if (row.nota) {
+        setPreviewUrl(`${UPLOAD_URL}${row.nota}`)
+      } else {
+        setPreviewUrl('')
+      }
+      setShowModal(true)
+    } catch (error) {
+      console.error('Error handling edit:', error)
+      showSnackbar('Gagal memuat data untuk edit', 'error')
     }
-    setShowModal(true)
   }
 
   const handleDelete = (id) => {
@@ -283,20 +421,48 @@ export default function Pengeluaran() {
     try {
       setLoading(true)
       await pengeluaranService.deletePengeluaran(id)
+      
+      // Refresh data with error handling
       if (rows.length === 1 && page > 0) {
         setPage(page - 1)
       } else {
-        await fetchData()
+        try {
+          await fetchData()
+        } catch (refreshError) {
+          console.error('Error refreshing data after delete:', refreshError)
+          // Reset to empty state if refresh fails
+          setRows([])
+          setTotalItems(0)
+          setTotalPages(0)
+        }
       }
-      const { start, end } = getDateRange(timeRange)
-      const total = !start || !end
-        ? await laporanService.getTotalPengeluaran()
-        : await laporanService.getTotalPengeluaranByDateRange(start, end)
-      setTotalPengeluaran(Number.isFinite(total) ? total : 0)
+      
+      // Update total with error handling
+      try {
+        const { start, end } = getDateRange(timeRange)
+        const total = !start || !end
+          ? await laporanService.getTotalPengeluaran()
+          : await laporanService.getTotalPengeluaranByDateRange(start, end)
+        setTotalPengeluaran(Number.isFinite(total) ? total : 0)
+      } catch (totalError) {
+        console.error('Error updating total after delete:', totalError)
+        setTotalPengeluaran(0)
+      }
+      
       showSnackbar(`Pengeluaran berhasil dihapus`, 'success')
     } catch (error) {
       console.error('Error deleting data:', error)
-      showSnackbar(`Gagal menghapus pengeluaran: ${error.message}`, 'error')
+      
+      let errorMessage = 'Gagal menghapus pengeluaran'
+      if (error.message.includes('Network Error')) {
+        errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.'
+      } else if (error.message.includes('404')) {
+        errorMessage = 'Data yang akan dihapus tidak ditemukan.'
+      } else if (error.message.includes('500')) {
+        errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.'
+      }
+      
+      showSnackbar(errorMessage, 'error')
     } finally {
       setLoading(false)
       setDeleteDialog({ open: false, id: null })
@@ -305,9 +471,26 @@ export default function Pengeluaran() {
 
   const handleShowNota = (notaPath) => {
     if (notaPath) {
+      // Try different URL constructions
+      const baseUrl = process.env.NEXT_PUBLIC_UPLOAD_URL || 'http://localhost:8087/uploads/'
+      let fullImageUrl
+      
+      // Remove leading slash if exists in notaPath to avoid double slashes
+      const cleanPath = notaPath.startsWith('/') ? notaPath.slice(1) : notaPath
+      
+      // Ensure base URL ends with slash
+      const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
+      
+      fullImageUrl = `${cleanBaseUrl}${cleanPath}`
+      
+      console.log('UPLOAD_URL:', baseUrl)
+      console.log('notaPath (original):', notaPath)
+      console.log('notaPath (cleaned):', cleanPath)
+      console.log('Final URL:', fullImageUrl)
+      
       setNotaDialog({
         open: true,
-        imageUrl: `${UPLOAD_URL}${notaPath}`
+        imageUrl: fullImageUrl
       })
     } else {
       showSnackbar('Nota tidak tersedia', 'warning')
@@ -341,6 +524,19 @@ export default function Pengeluaran() {
       setLoading(true)
       if (!formData.tanggal) throw new Error('Tanggal harus diisi')
       if (!formData.nominal) throw new Error('Nominal harus diisi')
+      
+      // Validasi nominal minimal Rp. 1.000
+      const nominalValue = parseInt(formData.nominal)
+      if (nominalValue < 1000) {
+        throw new Error('Nominal minimal adalah Rp. 1.000')
+      }
+      
+      // Validasi saldo mencukupi (hanya untuk pengeluaran baru, bukan edit)
+      if (!editingId && currentSaldo > 0 && nominalValue > currentSaldo) {
+        const shortfall = nominalValue - currentSaldo
+        throw new Error(`Saldo tidak mencukupi. Saldo saat ini: ${formatCurrency(currentSaldo)}, diperlukan: ${formatCurrency(nominalValue)}. Kekurangan: ${formatCurrency(shortfall)}`)
+      }
+      
       if (!formData.keterangan) throw new Error('Keterangan harus diisi')
       if (!editingId && !formData.nota) throw new Error('Nota harus diupload')
 
@@ -371,15 +567,49 @@ export default function Pengeluaran() {
 
       showSnackbar(result.message, 'success')
       setShowModal(false)
-      await fetchData()
-      const { start, end } = getDateRange(timeRange)
-      const total = !start || !end
-        ? await laporanService.getTotalPengeluaran()
-        : await laporanService.getTotalPengeluaranByDateRange(start, end)
-      setTotalPengeluaran(Number.isFinite(total) ? total : 0)
+      
+      // Refresh data with error handling
+      try {
+        await fetchData()
+        const { start, end } = getDateRange(timeRange)
+        const total = !start || !end
+          ? await laporanService.getTotalPengeluaran()
+          : await laporanService.getTotalPengeluaranByDateRange(start, end)
+        setTotalPengeluaran(Number.isFinite(total) ? total : 0)
+      } catch (refreshError) {
+        console.error('Error refreshing data after save:', refreshError)
+        // Don't show error to user as the save was successful
+      }
     } catch (error) {
       console.error('Error saving data:', error)
-      showSnackbar(error.message || 'Gagal menyimpan data', 'error')
+      
+      // Handle specific error cases with user-friendly Indonesian messages
+      let errorMessage = 'Gagal menyimpan data pengeluaran'
+      
+      if (error.message && error.message.includes('insufficient saldo')) {
+        // Parse the insufficient saldo error message
+        const match = error.message.match(/insufficient saldo: (\d+), required: (\d+)/)
+        if (match) {
+          const currentSaldo = parseInt(match[1])
+          const requiredAmount = parseInt(match[2])
+          const shortfall = requiredAmount - currentSaldo
+          
+          errorMessage = `Saldo tidak mencukupi. Saldo saat ini: ${formatCurrency(currentSaldo)}, diperlukan: ${formatCurrency(requiredAmount)}. Kekurangan: ${formatCurrency(shortfall)}`
+        } else {
+          errorMessage = 'Saldo tidak mencukupi untuk melakukan pengeluaran ini'
+        }
+      } else if (error.message && error.message.includes('Network Error')) {
+        errorMessage = 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.'
+      } else if (error.message && error.message.includes('500')) {
+        errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi nanti.'
+      } else if (error.message && error.message.includes('400')) {
+        errorMessage = 'Data yang dimasukkan tidak valid. Periksa kembali form Anda.'
+      } else if (error.message) {
+        // Use the error message from API if available
+        errorMessage = error.message
+      }
+      
+      showSnackbar(errorMessage, 'error')
     } finally {
       setLoading(false)
     }
@@ -395,55 +625,123 @@ export default function Pengeluaran() {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}    // mulai redup & agak turun
-      animate={{ opacity: 1, y: 0 }}     // animasi ke normal
-      exit={{ opacity: 0, y: -20 }}      // (opsional) kalau ada animasi keluar
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-    >
+    <ThemeProvider theme={customTheme}>
       <Box sx={{
-        padding: '24px',
-        mt: { xs: '64px', sm: '80px' }
+        minHeight: '100vh',
+        background: isDarkMode 
+          ? 'linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%)'
+          : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
+        position: 'relative',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: isDarkMode
+            ? 'radial-gradient(circle at 25% 25%, rgba(100, 181, 246, 0.1) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(244, 143, 177, 0.1) 0%, transparent 50%)'
+            : 'radial-gradient(circle at 25% 25%, rgba(25, 118, 210, 0.05) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(220, 0, 78, 0.05) 0%, transparent 50%)',
+          pointerEvents: 'none',
+        }
       }}>
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={3000}
-          onClose={handleCloseSnackbar}
-          TransitionComponent={Slide}
-          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        <Container 
+          maxWidth="lg" 
+          sx={{ 
+            position: 'relative',
+            zIndex: 1,
+            py: 4,
+          }}
         >
-          <Alert
-            onClose={handleCloseSnackbar}
-            severity={snackbar.severity}
-            sx={{
-              width: '100%',
-              borderRadius: '12px',
-              boxShadow: '0 4px 20px 0 rgba(0,0,0,0.1)',
-              fontWeight: 500
-            }}
-            action={
-              <IconButton
-                size="small"
-                aria-label="close"
-                color="inherit"
-                onClick={handleCloseSnackbar}
-              >
-                <CloseIcon fontSize="small" />
-              </IconButton>
-            }
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
           >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
+            {/* Page Title */}
+            <Box 
+              sx={{ 
+                p: 3,
+                mb: 4,
+                borderRadius: '20px',
+                background: isDarkMode 
+                  ? 'linear-gradient(135deg, rgba(30, 30, 30, 0.8) 0%, rgba(60, 60, 60, 0.4) 100%)'
+                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 249, 250, 0.4) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: isDarkMode 
+                  ? '1px solid rgba(255, 255, 255, 0.1)' 
+                  : '1px solid rgba(255, 255, 255, 0.8)',
+                boxShadow: isDarkMode 
+                  ? '0 8px 32px rgba(0, 0, 0, 0.3)' 
+                  : '0 8px 32px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <Typography 
+                variant="h4" 
+                sx={{ 
+                  fontWeight: 700, 
+                  background: isDarkMode 
+                    ? 'linear-gradient(45deg, #64b5f6, #90caf9, #42a5f5)'
+                    : 'linear-gradient(45deg, #1976d2, #42a5f5, #1e88e5)',
+                  backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textShadow: 'none',
+                  fontSize: { xs: '1.8rem', sm: '2.5rem' },
+                  letterSpacing: '-0.02em',
+                  textAlign: 'center',
+                }}
+              >
+                Pengeluaran Organisasi
+              </Typography>
+            </Box>
 
-        <PengeluaranHeader
-          totalPengeluaran={totalPengeluaran}
-          isLoadingTotal={isLoadingTotal}
-          handleAdd={handleAdd}
-          formatCurrency={formatCurrency}
-        />
+            <Snackbar
+              open={snackbar.open}
+              autoHideDuration={3000}
+              onClose={handleCloseSnackbar}
+              TransitionComponent={Slide}
+              anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+              <Alert
+                onClose={handleCloseSnackbar}
+                severity={snackbar.severity}
+                sx={{
+                  width: '100%',
+                  borderRadius: '16px',
+                  boxShadow: isDarkMode 
+                    ? '0 8px 32px rgba(0,0,0,0.4)' 
+                    : '0 8px 32px rgba(0,0,0,0.1)',
+                  fontWeight: 500,
+                  backdropFilter: 'blur(10px)',
+                  background: isDarkMode 
+                    ? 'rgba(30, 30, 30, 0.9)' 
+                    : 'rgba(255, 255, 255, 0.9)',
+                }}
+                action={
+                  <IconButton
+                    size="small"
+                    aria-label="close"
+                    color="inherit"
+                    onClick={handleCloseSnackbar}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                }
+              >
+                {snackbar.message}
+              </Alert>
+            </Snackbar>
 
-        <PengeluaranTable
+            <PengeluaranHeader
+              totalPengeluaran={totalPengeluaran}
+              isLoadingTotal={isLoadingTotal}
+              handleAdd={handleAdd}
+              formatCurrency={formatCurrency}
+            />
+
+            <PengeluaranTable
           rows={rows}
           loading={loading}
           page={page}
@@ -461,31 +759,34 @@ export default function Pengeluaran() {
           timeRangeOptions={timeRangeOptions}
         />
 
-        <PengeluaranFormDialog
-          showModal={showModal}
-          setShowModal={setShowModal}
-          editingId={editingId}
-          formData={formData}
-          handleInputChange={handleInputChange}
-          handleSave={handleSave}
-          loading={loading}
-          previewUrl={previewUrl}
-          setPreviewUrl={setPreviewUrl}
-        />
+            <PengeluaranFormDialog
+              showModal={showModal}
+              setShowModal={setShowModal}
+              editingId={editingId}
+              formData={formData}
+              handleInputChange={handleInputChange}
+              handleNominalBlur={handleNominalBlur}
+              handleSave={handleSave}
+              loading={loading}
+              previewUrl={previewUrl}
+              setPreviewUrl={setPreviewUrl}
+            />
 
-        <DeleteConfirmationDialog
-          deleteDialog={deleteDialog}
-          setDeleteDialog={setDeleteDialog}
-          confirmDelete={confirmDelete}
-          loading={loading}
-        />
+            <DeleteConfirmationDialog
+              deleteDialog={deleteDialog}
+              setDeleteDialog={setDeleteDialog}
+              confirmDelete={confirmDelete}
+              loading={loading}
+            />
 
-        <NotaPreviewDialog
-          notaDialog={notaDialog}
-          handleCloseNotaDialog={handleCloseNotaDialog}
-          showSnackbar={showSnackbar}
-        />
+            <NotaPreviewDialog
+              notaDialog={notaDialog}
+              handleCloseNotaDialog={handleCloseNotaDialog}
+              showSnackbar={showSnackbar}
+            />
+          </motion.div>
+        </Container>
       </Box>
-    </motion.div>
+    </ThemeProvider>
   );
 }
