@@ -11,12 +11,12 @@ import {
   Button,
   CircularProgress,
   MenuItem,
-  Box,
-  useTheme
+  Box
 } from '@mui/material'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import { Add as AddIcon, Edit as EditIcon, Save as SaveIcon } from '@mui/icons-material'
 import { useState, useEffect } from 'react'
+import { useSoftUIController } from '@/context'
 
 export default function PemasukanFormDialog({
   showModal,
@@ -29,8 +29,9 @@ export default function PemasukanFormDialog({
   handleSave,
   loading
 }) {
-  const theme = useTheme()
-  const isDarkMode = theme.palette.mode === 'dark'
+  const [controller] = useSoftUIController()
+  const { darkMode } = controller
+  const isDarkMode = darkMode
   const [previewUrl, setPreviewUrl] = useState('');
 
   // Set default datetime to current time when opening for new entry

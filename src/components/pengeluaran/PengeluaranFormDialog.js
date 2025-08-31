@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import {
   Dialog,
   DialogTitle,
@@ -10,10 +11,10 @@ import {
   Divider,
   Button,
   CircularProgress,
-  Box,
-  useTheme
+  Box
 } from '@mui/material'
 import { Add as AddIcon, Edit as EditIcon, Receipt as ReceiptIcon } from '@mui/icons-material'
+import { useSoftUIController } from '@/context'
 
 export default function PengeluaranFormDialog({
   showModal,
@@ -27,8 +28,9 @@ export default function PengeluaranFormDialog({
   previewUrl,
   setPreviewUrl
 }) {
-  const theme = useTheme()
-  const isDarkMode = theme.palette.mode === 'dark'
+  const [controller] = useSoftUIController()
+  const { darkMode } = controller
+  const isDarkMode = darkMode
   
   const handleClose = () => {
     setShowModal(false)
@@ -489,13 +491,16 @@ export default function PengeluaranFormDialog({
             <label htmlFor="nota-upload" style={{ cursor: 'pointer' }}>
               {previewUrl ? (
                 <Box sx={{ position: 'relative' }}>
-                  <img
+                  <Image
                     src={previewUrl}
                     alt="Preview Nota"
+                    width={300}
+                    height={200}
                     style={{
                       maxWidth: '100%',
                       maxHeight: '200px',
-                      borderRadius: '8px'
+                      borderRadius: '8px',
+                      objectFit: 'contain'
                     }}
                   />
                   <Typography

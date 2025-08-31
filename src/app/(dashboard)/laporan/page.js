@@ -370,7 +370,7 @@ export default function LaporanKeuangan() {
     }
     
     fetchDataByRange(timeRange)
-  }, [timeRange])
+  }, [timeRange]) // Removed fetchDataByRange from dependency
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget)

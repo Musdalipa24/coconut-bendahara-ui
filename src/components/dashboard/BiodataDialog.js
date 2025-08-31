@@ -1,4 +1,5 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography } from '@mui/material'
+import Image from 'next/image'
 import { colors } from '@/styles/colors'
 
 export default function BiodataDialog({ open, onClose }) {
@@ -8,7 +9,13 @@ export default function BiodataDialog({ open, onClose }) {
         Profil Bendahara COCONUT Computer Club
       </DialogTitle>
       <DialogContent sx={{ textAlign: 'center' }}>
-        <img src="image copy.png" alt="Profile" style={{ width: 250, borderRadius: '50%' }} />
+        <Image 
+          src="/image copy.png" 
+          alt="Profile" 
+          width={250} 
+          height={250} 
+          style={{ borderRadius: '50%' }} 
+        />
         <Typography variant="h6" fontWeight={600} mt={2}>
           Nama Bendahara: Syahrul Ramadhan
         </Typography>

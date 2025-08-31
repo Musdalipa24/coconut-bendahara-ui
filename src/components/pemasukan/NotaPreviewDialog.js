@@ -8,16 +8,17 @@ import {
   Button,
   IconButton,
   Box,
-  Typography,
-  useTheme
+  Typography
 } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
 import DownloadIcon from '@mui/icons-material/Download'
 import { useState, useEffect } from 'react'
+import { useSoftUIController } from '@/context'
 
 export default function NotaPreviewDialog({ notaDialog, handleCloseNotaDialog }) {
-  const theme = useTheme()
-  const isDarkMode = theme.palette.mode === 'dark'
+  const [controller] = useSoftUIController()
+  const { darkMode } = controller
+  const isDarkMode = darkMode
   const [imageError, setImageError] = useState(false)
   const [attemptedUrls, setAttemptedUrls] = useState([])
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   Box,
   Snackbar,
@@ -258,7 +258,7 @@ export default function Pemasukan() {
 
   useEffect(() => {
     fetchData();
-  }, [page, rowsPerPage, timeRange]);
+  }, [page, rowsPerPage, timeRange]); // Removed fetchData from dependency
 
   useEffect(() => {
     const fetchTotal = async () => {
@@ -285,7 +285,7 @@ export default function Pemasukan() {
       }
     };
     fetchTotal();
-  }, [timeRange]);
+  }, [timeRange]); // Removed getDateRange from dependency
 
   // Event handlers
   const handleInputChange = (e) => {

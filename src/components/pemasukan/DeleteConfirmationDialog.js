@@ -7,10 +7,10 @@ import {
   DialogActions,
   Typography,
   Button,
-  CircularProgress,
-  useTheme
+  CircularProgress
 } from '@mui/material'
 import { Warning as WarningIcon, Delete as DeleteIcon } from '@mui/icons-material'
+import { useSoftUIController } from '@/context'
 
 export default function DeleteConfirmationDialog({
   deleteDialog,
@@ -18,8 +18,9 @@ export default function DeleteConfirmationDialog({
   confirmDelete,
   loading
 }) {
-  const theme = useTheme()
-  const isDarkMode = theme.palette.mode === 'dark'
+  const [controller] = useSoftUIController()
+  const { darkMode } = controller
+  const isDarkMode = darkMode
   
   return (
     <Dialog

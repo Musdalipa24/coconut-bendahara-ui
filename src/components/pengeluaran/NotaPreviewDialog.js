@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import {
   Dialog,
   DialogTitle,
@@ -10,17 +11,18 @@ import {
   Typography,
   Box,
   CircularProgress,
-  Alert,
-  useTheme
+  Alert
 } from '@mui/material'
 import { Receipt as ReceiptIcon, Error as ErrorIcon, Download as DownloadIcon } from '@mui/icons-material'
+import { useSoftUIController } from '@/context'
 
 export default function NotaPreviewDialog({
   notaDialog,
   handleCloseNotaDialog
 }) {
-  const theme = useTheme()
-  const isDarkMode = theme.palette.mode === 'dark'
+  const [controller] = useSoftUIController()
+  const { darkMode } = controller
+  const isDarkMode = darkMode
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [fallbackAttempted, setFallbackAttempted] = useState(false)
@@ -207,9 +209,11 @@ export default function NotaPreviewDialog({
         )}
 
         {notaDialog.imageUrl && (
-          <img
+          <Image
             src={notaDialog.imageUrl}
             alt="Nota Pengeluaran"
+            width={800}
+            height={600}
             onLoad={handleImageLoad}
             onError={handleImageError}
             style={{

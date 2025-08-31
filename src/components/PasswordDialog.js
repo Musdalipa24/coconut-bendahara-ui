@@ -1,7 +1,6 @@
 'use client'
 import { useState } from 'react'
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Alert, Box, Typography } from '@mui/material'
-import { useTheme } from '@mui/material/styles'
 import { Lock as LockIcon, VpnKey as KeyIcon, Security as SecurityIcon } from '@mui/icons-material'
 import { useSoftUIController } from '@/context'
 import { authService } from '@/services/authService'
@@ -12,7 +11,6 @@ export default function PasswordDialog({ open, setOpen }) {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [alert, setAlert] = useState(null)
   const [loading, setLoading] = useState(false)
-  const theme = useTheme()
   const [controller] = useSoftUIController()
   const { darkMode } = controller
   const isDarkMode = darkMode

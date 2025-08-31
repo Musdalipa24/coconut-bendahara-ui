@@ -1,4 +1,4 @@
-import { Typography, Box, useTheme } from '@mui/material'
+import { Typography, Box } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { Card } from '@/components/ui/card'
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet'
@@ -50,7 +50,6 @@ export default function WelcomeCard({ totalSaldo }) {
   const [controller] = useSoftUIController()
   const { darkMode } = controller
   const isDarkMode = darkMode
-  const theme = useTheme()
 
   return (
     <StyledCard isDark={isDarkMode}>
