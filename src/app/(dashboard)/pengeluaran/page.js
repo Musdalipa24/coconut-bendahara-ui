@@ -258,7 +258,7 @@ export default function Pengeluaran() {
 
   useEffect(() => {
     fetchData()
-  }, [page, rowsPerPage, timeRange]) // Removed fetchData from dependency
+  }, [page, rowsPerPage, timeRange])
 
   useEffect(() => {
     const fetchTotal = async () => {
@@ -285,7 +285,7 @@ export default function Pengeluaran() {
       }
     }
     fetchTotal()
-  }, [timeRange]) // Removed getDateRange from dependency
+  }, [timeRange])
 
   useEffect(() => {
     const fetchSaldo = async () => {

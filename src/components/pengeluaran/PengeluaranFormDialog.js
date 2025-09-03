@@ -11,10 +11,10 @@ import {
   Divider,
   Button,
   CircularProgress,
-  Box
+  Box,
+  useTheme
 } from '@mui/material'
 import { Add as AddIcon, Edit as EditIcon, Receipt as ReceiptIcon } from '@mui/icons-material'
-import { useSoftUIController } from '@/context'
 
 export default function PengeluaranFormDialog({
   showModal,
@@ -28,9 +28,8 @@ export default function PengeluaranFormDialog({
   previewUrl,
   setPreviewUrl
 }) {
-  const [controller] = useSoftUIController()
-  const { darkMode } = controller
-  const isDarkMode = darkMode
+  const theme = useTheme()
+  const isDarkMode = theme.palette.mode === 'dark'
   
   const handleClose = () => {
     setShowModal(false)

@@ -1,4 +1,4 @@
-import { Typography, Box } from '@mui/material'
+import { Typography, Box, useTheme } from '@mui/material'
 import { styled } from '@mui/material/styles'
 import { Card } from '@/components/ui/card'
 import { useSoftUIController } from '@/context'
@@ -76,6 +76,7 @@ export default function StatCard({ variant, icon, title, value }) {
   const [controller] = useSoftUIController()
   const { darkMode } = controller
   const isDarkMode = darkMode
+  const theme = useTheme()
 
   const getTextColors = () => {
     if (variant === 'green') {

@@ -125,7 +125,7 @@ export default function Pemasukan() {
     return `${year}-${month}-${day}`;
   };
 
-  const getDateRange = (range) => {
+  const getDateRange = useCallback((range) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const startDate = new Date();
@@ -156,7 +156,7 @@ export default function Pemasukan() {
       default:
         return { start: null, end: null };
     }
-  };
+  }, []); // Empty dependency array karena tidak bergantung pada state/props
 
   const formatCurrency = (amount) => {
     const validAmount = Number.isFinite(Number(amount)) ? Number(amount) : 0;
@@ -188,7 +188,7 @@ export default function Pemasukan() {
   };
 
   // Data fetching
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const { start, end } = getDateRange(timeRange);
@@ -254,11 +254,11 @@ export default function Pemasukan() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, rowsPerPage, timeRange, getDateRange]); // Dependencies yang diperlukan
 
   useEffect(() => {
     fetchData();
-  }, [page, rowsPerPage, timeRange]); // Removed fetchData from dependency
+  }, [page, rowsPerPage, timeRange]);
 
   useEffect(() => {
     const fetchTotal = async () => {
@@ -285,7 +285,7 @@ export default function Pemasukan() {
       }
     };
     fetchTotal();
-  }, [timeRange]); // Removed getDateRange from dependency
+  }, [timeRange]); // Hapus getDateRange karena sudah di-memoize dengan useCallback
 
   // Event handlers
   const handleInputChange = (e) => {
@@ -355,8 +355,8 @@ export default function Pemasukan() {
         tanggal: localDateTime,
         nominal: row.nominal.toString(),
         keterangan: row.keterangan,
-        kategori: ['Pajak', 'Retribusi', 'Dana Desa', 'Bantuan'].includes(row.kategori) ? row.kategori : 'Lainnya',
-        kategoriKustom: ['Pajak', 'Retribusi', 'Dana Desa', 'Bantuan'].includes(row.kategori) ? '' : row.kategori,
+        kategori: ['Iuran', 'Sumbangan', 'Dana Organisasi'].includes(row.kategori) ? row.kategori : 'Lainnya',
+        kategoriKustom: ['Iuran', 'Sumbangan', 'Dana Organisasi'].includes(row.kategori) ? '' : row.kategori,
         nota: row.nota // URL or null
       });
       setShowModal(true);

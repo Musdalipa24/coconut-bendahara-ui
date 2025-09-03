@@ -11,12 +11,12 @@ import {
   Button,
   CircularProgress,
   MenuItem,
-  Box
+  Box,
+  useTheme
 } from '@mui/material'
 import ReceiptIcon from '@mui/icons-material/Receipt'
 import { Add as AddIcon, Edit as EditIcon, Save as SaveIcon } from '@mui/icons-material'
 import { useState, useEffect } from 'react'
-import { useSoftUIController } from '@/context'
 
 export default function PemasukanFormDialog({
   showModal,
@@ -29,9 +29,8 @@ export default function PemasukanFormDialog({
   handleSave,
   loading
 }) {
-  const [controller] = useSoftUIController()
-  const { darkMode } = controller
-  const isDarkMode = darkMode
+  const theme = useTheme()
+  const isDarkMode = theme.palette.mode === 'dark'
   const [previewUrl, setPreviewUrl] = useState('');
 
   // Set default datetime to current time when opening for new entry
@@ -375,11 +374,10 @@ export default function PemasukanFormDialog({
           }}
           inputProps={{ 'aria-label': 'Kategori pemasukan' }}
         >
-          <MenuItem value="">Pilih Kategori</MenuItem>
-          <MenuItem value="Pajak">Pajak</MenuItem>
-          <MenuItem value="Retribusi">Retribusi</MenuItem>
-          <MenuItem value="Dana Desa">Dana Desa</MenuItem>
-          <MenuItem value="Bantuan">Bantuan</MenuItem>
+          <MenuItem value="Kategori">Pilih Kategori</MenuItem>
+          <MenuItem value="Iuran">Iuran</MenuItem>
+          <MenuItem value="Sumbangan">Sumbangan</MenuItem>
+          <MenuItem value="Dana Organisasi">Dana Organisasi</MenuItem>
           <MenuItem value="Lainnya">Lainnya</MenuItem>
         </TextField>
         {formData.kategori === 'Lainnya' && (

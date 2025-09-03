@@ -7,18 +7,17 @@ import {
   TextField,
   Button,
   Alert,
-  Box
+  Box,
+  useTheme
 } from '@mui/material'
 import { useState } from 'react'
 import { authService } from '@/services/authService'
-import { useSoftUIController } from '@/context'
 import PersonIcon from '@mui/icons-material/Person'
 import LockIcon from '@mui/icons-material/Lock'
 
 export default function LoginDialog({ open, setOpen }) {
-  const [controller] = useSoftUIController()
-  const { darkMode } = controller
-  const isDarkMode = darkMode
+  const theme = useTheme()
+  const isDarkMode = theme.palette.mode === 'dark'
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')

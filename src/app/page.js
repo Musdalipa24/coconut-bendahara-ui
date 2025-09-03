@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 
 export const metadata = {
   title: 'UI Bendahara',
-  description: 'Aplikasi Manajemen Keuangan',
+  description: 'Aplikasi Manajemen Keuangan Organisasi',
 }
 
 export default function Home() {

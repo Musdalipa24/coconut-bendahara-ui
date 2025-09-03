@@ -11,18 +11,17 @@ import {
   Typography,
   Box,
   CircularProgress,
-  Alert
+  Alert,
+  useTheme
 } from '@mui/material'
 import { Receipt as ReceiptIcon, Error as ErrorIcon, Download as DownloadIcon } from '@mui/icons-material'
-import { useSoftUIController } from '@/context'
 
 export default function NotaPreviewDialog({
   notaDialog,
   handleCloseNotaDialog
 }) {
-  const [controller] = useSoftUIController()
-  const { darkMode } = controller
-  const isDarkMode = darkMode
+  const theme = useTheme()
+  const isDarkMode = theme.palette.mode === 'dark'
   const [imageLoaded, setImageLoaded] = useState(false)
   const [imageError, setImageError] = useState(false)
   const [fallbackAttempted, setFallbackAttempted] = useState(false)
