@@ -256,18 +256,25 @@ export default function PemasukanTable({
                           gap: 1
                         }}
                       >
-                        <Tooltip title="Edit">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleEdit(row)}
-                            sx={{
-                              color: isDarkMode ? '#81c784' : '#2e7d32',
-                              width: { xs: '35px', sm: '30px' },
-                              height: { xs: '35px', sm: '30px' }
-                            }}
-                          >
-                            <EditIcon />
-                          </IconButton>
+                        <Tooltip title={row.kategori === 'Iuran' ? "Iuran dikelola di halaman Iuran" : "Edit"}>
+                          <span>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleEdit(row)}
+                              disabled={row.kategori === 'Iuran'}
+                              aria-label={row.kategori === 'Iuran' ? "Iuran dikelola di halaman Iuran" : `Edit pemasukan nomor ${row.id}`}
+                              sx={{
+                                color: isDarkMode ? '#81c784' : '#2e7d32',
+                                width: { xs: '35px', sm: '30px' },
+                                height: { xs: '35px', sm: '30px' },
+                                '&.Mui-disabled': {
+                                  color: isDarkMode ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'
+                                }
+                              }}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                         <Tooltip title="Hapus">
                           <IconButton

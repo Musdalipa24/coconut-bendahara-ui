@@ -103,7 +103,7 @@ export default function Pengeluaran() {
   const [totalPages, setTotalPages] = useState(0)
 
   // Constants
-  const UPLOAD_URL = process.env.NEXT_PUBLIC_UPLOAD_URL || 'http://localhost:8087/uploads/'
+  const UPLOAD_URL = process.env.NEXT_PUBLIC_UPLOAD_URL || `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/uploads/`
   const timeRangeOptions = [
     { value: 'today', label: 'Hari Ini' },
     { value: 'yesterday', label: 'Kemarin' },
@@ -171,16 +171,23 @@ export default function Pengeluaran() {
   const formatDateTime = (backendDateString) => {
     if (!backendDateString) return '-'
     try {
-      const [datePart, timePart] = backendDateString.split(' ')
-      const [day, month, year] = datePart.split('-')
-      const [hours, minutes] = timePart.split(':')
-      return new Date(year, month - 1, day, hours, minutes).toLocaleString('id-ID', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      const [datePart] = backendDateString.split(' ')
+      const parts = datePart.split(/[-/]/)
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`
+        } else {
+          return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`
+        }
+      }
+      const date = new Date(backendDateString)
+      if (!isNaN(date.getTime())) {
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const year = date.getFullYear()
+        return `${day}/${month}/${year}`
+      }
+      return backendDateString
     } catch (e) {
       console.error('Error formatting date:', e)
       return backendDateString
@@ -310,27 +317,8 @@ export default function Pengeluaran() {
 
   // Event handlers
   const handleInputChange = (e) => {
-    const { name, value, files } = e.target
-    if (name === 'nota') {
-      const file = files[0]
-      if (file && file.size > 5 * 1024 * 1024) {
-        showSnackbar('Ukuran file terlalu besar (maksimal 5MB)', 'error')
-        return
-      }
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl)
-      }
-      setFormData(prev => ({
-        ...prev,
-        [name]: file
-      }))
-      if (file) {
-        const url = URL.createObjectURL(file)
-        setPreviewUrl(url)
-      } else {
-        setPreviewUrl('')
-      }
-    } else if (name === 'nominal') {
+    const { name, value } = e.target
+    if (name === 'nominal') {
       const numericValue = value.replace(/\D/g, '')
       if (numericValue.length > 11) {
         showSnackbar('Nominal terlalu besar (maksimal puluhan milyar)', 'error')
@@ -363,44 +351,52 @@ export default function Pengeluaran() {
       keterangan: '',
       nota: null
     })
-    setPreviewUrl('')
     setShowModal(true)
   }
 
   const handleEdit = (row) => {
     try {
-      let localDateTime = ''
+      let localDate = ''
       if (row.tanggal) {
-        // Handle different date formats
         if (row.tanggal.includes('T')) {
-          // Already in ISO format
-          localDateTime = row.tanggal.slice(0, 16)
+          localDate = row.tanggal.slice(0, 10)
         } else if (row.tanggal.includes(' ')) {
-          // Format: DD-MM-YYYY HH:mm
-          const [datePart, timePart] = row.tanggal.split(' ')
-          const [day, month, year] = datePart.split('-')
-          localDateTime = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}`
+          const [datePart] = row.tanggal.split(' ')
+          const parts = datePart.split(/[-/]/)
+          if (parts.length === 3) {
+            if (parts[0].length === 4) {
+              localDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
+            } else {
+              localDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+            }
+          }
+        } else if (row.tanggal.includes('-') || row.tanggal.includes('/')) {
+          const parts = row.tanggal.split(/[-/]/)
+          if (parts.length === 3) {
+            if (parts[0].length === 4) {
+              localDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
+            } else {
+              localDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`
+            }
+          }
         } else {
-          // Just date
           const date = new Date(row.tanggal)
           if (!isNaN(date.getTime())) {
-            localDateTime = date.toISOString().slice(0, 16)
+            const year = date.getFullYear()
+            const month = String(date.getMonth() + 1).padStart(2, '0')
+            const day = String(date.getDate()).padStart(2, '0')
+            localDate = `${year}-${month}-${day}`
           }
         }
       }
 
       setEditingId(row.id)
       setFormData({
-        tanggal: localDateTime,
+        tanggal: localDate,
         nominal: row.nominal.toString(),
         keterangan: row.keterangan,
-        nota: null // URL or null
+        nota: row.nota // URL or null
       })
-      if (row.nota) {
-        setPreviewUrl(`${UPLOAD_URL}${row.nota}`)
-      } else {
-        setPreviewUrl('')
-      }
       setShowModal(true)
     } catch (error) {
       console.error('Error handling edit:', error)
@@ -471,23 +467,26 @@ export default function Pengeluaran() {
 
   const handleShowNota = (notaPath) => {
     if (notaPath) {
-      // Try different URL constructions
-      const baseUrl = process.env.NEXT_PUBLIC_UPLOAD_URL || 'http://localhost:8087/uploads/'
-      let fullImageUrl
-      
-      // Remove leading slash if exists in notaPath to avoid double slashes
-      const cleanPath = notaPath.startsWith('/') ? notaPath.slice(1) : notaPath
-      
-      // Ensure base URL ends with slash
+      if (notaPath.startsWith('http://') || notaPath.startsWith('https://')) {
+        setNotaDialog({
+          open: true,
+          imageUrl: notaPath
+        })
+        return
+      }
+
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
+      const baseUrl = process.env.NEXT_PUBLIC_UPLOAD_URL || `${apiBase}/api/uploads/`
       const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
-      
-      fullImageUrl = `${cleanBaseUrl}${cleanPath}`
-      
-      console.log('UPLOAD_URL:', baseUrl)
-      console.log('notaPath (original):', notaPath)
-      console.log('notaPath (cleaned):', cleanPath)
-      console.log('Final URL:', fullImageUrl)
-      
+
+      let cleanPath = notaPath.replace(/^\/+/, '')
+      cleanPath = cleanPath.replace(/^api\/uploads\//, '')
+      cleanPath = cleanPath.replace(/^uploads\//, '')
+
+      const fullImageUrl = `${cleanBaseUrl}${cleanPath}`
+
+      console.log('Final Nota URL:', fullImageUrl)
+
       setNotaDialog({
         open: true,
         imageUrl: fullImageUrl
@@ -538,29 +537,20 @@ export default function Pengeluaran() {
       }
       
       if (!formData.keterangan) throw new Error('Keterangan harus diisi')
-      if (!editingId && !formData.nota) throw new Error('Nota harus diupload')
 
       const dateObj = new Date(formData.tanggal)
       if (isNaN(dateObj.getTime())) throw new Error('Format tanggal tidak valid')
 
-      const day = String(dateObj.getDate()).padStart(2, '0')
-      const month = String(dateObj.getMonth() + 1).padStart(2, '0')
-      const year = dateObj.getFullYear()
-      const hours = String(dateObj.getHours()).padStart(2, '0')
-      const minutes = String(dateObj.getMinutes()).padStart(2, '0')
-      const formattedDate = `${year}-${month}-${day} ${hours}:${minutes}`
-
       const dataToSend = {
-        tanggal: formattedDate,
-        nominal: parseFloat(formData.nominal),
-        keterangan: formData.keterangan.trim(),
+        tanggal: formData.tanggal,
+        nominal: formData.nominal,
+        keterangan: formData.keterangan,
         nota: formData.nota
       }
 
       let result
       if (editingId) {
-        const { nota, ...updateData } = dataToSend
-        result = await pengeluaranService.updatePengeluaran(editingId, formData.nota ? dataToSend : updateData)
+        result = await pengeluaranService.updatePengeluaran(editingId, dataToSend)
       } else {
         result = await pengeluaranService.addPengeluaran(dataToSend)
       }
@@ -764,12 +754,11 @@ export default function Pengeluaran() {
               setShowModal={setShowModal}
               editingId={editingId}
               formData={formData}
+              setFormData={setFormData}
               handleInputChange={handleInputChange}
               handleNominalBlur={handleNominalBlur}
               handleSave={handleSave}
               loading={loading}
-              previewUrl={previewUrl}
-              setPreviewUrl={setPreviewUrl}
             />
 
             <DeleteConfirmationDialog

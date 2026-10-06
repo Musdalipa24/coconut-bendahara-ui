@@ -9,17 +9,19 @@ import {
     Menu,
     MenuItem,
     ListItemIcon,
-    ListItemText
+    ListItemText,
+    Divider
 } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import SettingsIcon from '@mui/icons-material/Settings'
 import DarkModeIcon from '@mui/icons-material/DarkMode'
 import LightModeIcon from '@mui/icons-material/LightMode'
+import LogoutIcon from '@mui/icons-material/Logout'
 import { useSoftUIController, setMiniSidenav } from '@/context'
 import { usePathname } from 'next/navigation'
 import { menuItems } from '@/config/menuItems'
 
-export default function DashboardAppBar({ darkMode, toggleDarkMode, setOpenPasswordDialog }) {
+export default function DashboardAppBar({ darkMode, toggleDarkMode, setOpenPasswordDialog, handleLogout }) {
   const [controller, dispatch] = useSoftUIController()
   const [anchorEl, setAnchorEl] = useState(null)
   const open = Boolean(anchorEl)
@@ -184,6 +186,33 @@ export default function DashboardAppBar({ darkMode, toggleDarkMode, setOpenPassw
               </ListItemIcon>
               <ListItemText sx={{ color: darkMode ? '#fff' : '#1976d2' }}>
                 Ganti Password
+              </ListItemText>
+            </MenuItem>
+            <Divider sx={{ my: 0.5, borderColor: darkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.08)' }} />
+            <MenuItem 
+              onClick={() => {
+                handleClose()
+                if (handleLogout) {
+                  handleLogout()
+                }
+              }}
+              sx={{
+                borderRadius: '8px',
+                margin: '4px',
+                color: darkMode ? '#ff8a80' : '#d32f2f',
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  background: darkMode 
+                    ? 'rgba(244, 67, 54, 0.15)' 
+                    : 'rgba(211, 47, 47, 0.08)',
+                }
+              }}
+            >
+              <ListItemIcon sx={{ color: darkMode ? '#ff8a80' : '#d32f2f' }}>
+                <LogoutIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText sx={{ color: darkMode ? '#ff8a80' : '#d32f2f' }}>
+                Keluar
               </ListItemText>
             </MenuItem>
           </Menu>

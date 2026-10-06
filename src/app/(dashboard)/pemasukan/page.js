@@ -103,7 +103,7 @@ export default function Pemasukan() {
   });
 
   // Constants
-  const UPLOAD_URL = process.env.NEXT_PUBLIC_UPLOAD_URL || 'http://localhost:8087/uploads/';
+  const UPLOAD_URL = process.env.NEXT_PUBLIC_UPLOAD_URL || `${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/uploads/`;
   const timeRangeOptions = [
     { value: 'today', label: 'Hari Ini' },
     { value: 'yesterday', label: 'Kemarin' },
@@ -171,16 +171,23 @@ export default function Pemasukan() {
   const formatDateTime = (backendDateString) => {
     if (!backendDateString) return '-';
     try {
-      const [datePart, timePart] = backendDateString.split(' ');
-      const [day, month, year] = datePart.split('-');
-      const [hours, minutes] = timePart.split(':');
-      return new Date(year, month - 1, day, hours, minutes).toLocaleString('id-ID', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      const [datePart] = backendDateString.split(' ');
+      const parts = datePart.split(/[-/]/);
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+        } else {
+          return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
+        }
+      }
+      const date = new Date(backendDateString);
+      if (!isNaN(date.getTime())) {
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+      return backendDateString;
     } catch (e) {
       console.error('Error formatting date:', e);
       return backendDateString;
@@ -330,33 +337,47 @@ export default function Pemasukan() {
 
   const handleEdit = (row) => {
     try {
-      let localDateTime = '';
+      let localDate = '';
       if (row.tanggal) {
-        // Handle different date formats
         if (row.tanggal.includes('T')) {
-          // Already in ISO format
-          localDateTime = row.tanggal.slice(0, 16);
+          localDate = row.tanggal.slice(0, 10);
         } else if (row.tanggal.includes(' ')) {
-          // Format: DD-MM-YYYY HH:mm
-          const [datePart, timePart] = row.tanggal.split(' ');
-          const [day, month, year] = datePart.split('-');
-          localDateTime = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${timePart}`;
+          const [datePart] = row.tanggal.split(' ');
+          const parts = datePart.split(/[-/]/);
+          if (parts.length === 3) {
+            if (parts[0].length === 4) {
+              localDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+            } else {
+              localDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+          }
+        } else if (row.tanggal.includes('-') || row.tanggal.includes('/')) {
+          const parts = row.tanggal.split(/[-/]/);
+          if (parts.length === 3) {
+            if (parts[0].length === 4) {
+              localDate = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+            } else {
+              localDate = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
+          }
         } else {
-          // Just date
           const date = new Date(row.tanggal);
           if (!isNaN(date.getTime())) {
-            localDateTime = date.toISOString().slice(0, 16);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            localDate = `${year}-${month}-${day}`;
           }
         }
       }
       
       setEditingId(row.id);
       setFormData({
-        tanggal: localDateTime,
+        tanggal: localDate,
         nominal: row.nominal.toString(),
         keterangan: row.keterangan,
-        kategori: ['Iuran', 'Sumbangan', 'Dana Organisasi'].includes(row.kategori) ? row.kategori : 'Lainnya',
-        kategoriKustom: ['Iuran', 'Sumbangan', 'Dana Organisasi'].includes(row.kategori) ? '' : row.kategori,
+        kategori: ['Sumbangan', 'Dana Organisasi'].includes(row.kategori) ? row.kategori : 'Lainnya',
+        kategoriKustom: ['Sumbangan', 'Dana Organisasi'].includes(row.kategori) ? '' : row.kategori,
         nota: row.nota // URL or null
       });
       setShowModal(true);
@@ -439,7 +460,7 @@ export default function Pemasukan() {
         throw new Error('Nominal minimal adalah Rp. 1.000');
       }
       
-      if (!formData.kategori) throw new Error('Kategori harus diisi');
+      if (!formData.kategori || formData.kategori === 'Kategori') throw new Error('Kategori harus diisi');
       if (formData.kategori === 'Lainnya' && !formData.kategoriKustom) {
         throw new Error('Kategori kustom harus diisi');
       }
@@ -494,22 +515,25 @@ export default function Pemasukan() {
 
   const handleShowNota = (notaPath) => {
     if (notaPath) {
-      // Try different URL constructions
-      const baseUrl = process.env.NEXT_PUBLIC_UPLOAD_URL || 'http://localhost:8087/uploads/';
-      let fullImageUrl;
-      
-      // Remove leading slash if exists in notaPath to avoid double slashes
-      const cleanPath = notaPath.startsWith('/') ? notaPath.slice(1) : notaPath;
-      
-      // Ensure base URL ends with slash
+      if (notaPath.startsWith('http://') || notaPath.startsWith('https://')) {
+        setNotaDialog({
+          open: true,
+          imageUrl: notaPath
+        });
+        return;
+      }
+
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+      const baseUrl = process.env.NEXT_PUBLIC_UPLOAD_URL || `${apiBase}/api/uploads/`;
       const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+
+      let cleanPath = notaPath.replace(/^\/+/, '');
+      cleanPath = cleanPath.replace(/^api\/uploads\//, '');
+      cleanPath = cleanPath.replace(/^uploads\//, '');
+
+      const fullImageUrl = `${cleanBaseUrl}${cleanPath}`;
       
-      fullImageUrl = `${cleanBaseUrl}${cleanPath}`;
-      
-      console.log('UPLOAD_URL:', baseUrl);
-      console.log('notaPath (original):', notaPath);
-      console.log('notaPath (cleaned):', cleanPath);
-      console.log('Final URL:', fullImageUrl);
+      console.log('Final Nota URL:', fullImageUrl);
       
       setNotaDialog({
         open: true,

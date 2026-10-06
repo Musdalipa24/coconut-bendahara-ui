@@ -11,16 +11,25 @@ export const formatRupiah = (number) => {
 export const formatDateTime = (backendDateString) => {
   if (!backendDateString) return '-'
   try {
-    const [datePart, timePart] = backendDateString.split(' ')
-    const [day, month, year] = datePart.split('-')
-    const [hours, minutes] = timePart.split(':')
-    return new Date(year, month - 1, day, hours, minutes).toLocaleString('id-ID', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+    const [datePart] = backendDateString.split(' ')
+    const parts = datePart.split(/[-/]/)
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        // YYYY-MM-DD
+        return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`
+      } else {
+        // DD-MM-YYYY
+        return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`
+      }
+    }
+    const date = new Date(backendDateString)
+    if (!isNaN(date.getTime())) {
+      const day = String(date.getDate()).padStart(2, '0')
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const year = date.getFullYear()
+      return `${day}/${month}/${year}`
+    }
+    return backendDateString
   } catch (e) {
     console.error('Error formatting date:', e)
     return backendDateString

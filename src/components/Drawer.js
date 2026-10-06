@@ -1,11 +1,12 @@
 'use client'
-import { Drawer, Box, Toolbar, Typography, List, IconButton } from '@mui/material'
+import { Drawer, Box, Toolbar, Typography, List, IconButton, ListItem, ListItemIcon, ListItemText } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close'
+import LogoutIcon from '@mui/icons-material/Logout'
 import Image from 'next/image'
 import MenuItems from './MenuItems'
 import { useSoftUIController, setMiniSidenav } from '@/context'
 
-export default function DashboardDrawer({ darkMode, miniSidenav }) {
+export default function DashboardDrawer({ darkMode, miniSidenav, handleLogout }) {
   const [controller, dispatch] = useSoftUIController()
 
   return (
@@ -32,7 +33,7 @@ export default function DashboardDrawer({ darkMode, miniSidenav }) {
           },
         }}
       >
-        <DrawerContent darkMode={darkMode} dispatch={dispatch} />
+        <DrawerContent darkMode={darkMode} dispatch={dispatch} handleLogout={handleLogout} />
       </Drawer>
 
       {/* Desktop Drawer */}
@@ -56,13 +57,13 @@ export default function DashboardDrawer({ darkMode, miniSidenav }) {
         }}
         open
       >
-        <DrawerContent darkMode={darkMode} miniSidenav={miniSidenav} />
+        <DrawerContent darkMode={darkMode} miniSidenav={miniSidenav} handleLogout={handleLogout} />
       </Drawer>
     </>
   )
 }
 
-function DrawerContent({ darkMode, miniSidenav, dispatch }) {
+function DrawerContent({ darkMode, miniSidenav, dispatch, handleLogout }) {
   return (
     <Box sx={{
       height: '100%',
@@ -146,9 +147,70 @@ function DrawerContent({ darkMode, miniSidenav, dispatch }) {
         </Typography>
       </Box>
 
-      <List sx={{ px: 2, flex: 1 }}>
+      <List sx={{ px: 2, flex: 1, overflowY: 'auto' }}>
         <MenuItems darkMode={darkMode} miniSidenav={miniSidenav} />
       </List>
+
+      {/* Tombol Logout di bagian bawah drawer */}
+      <Box sx={{
+        p: 2,
+        borderTop: darkMode 
+          ? '1px solid rgba(255, 255, 255, 0.1)' 
+          : '1px solid rgba(0, 0, 0, 0.08)',
+      }}>
+        <ListItem
+          button="true"
+          onClick={() => {
+            if (dispatch) setMiniSidenav(dispatch, false);
+            if (handleLogout) handleLogout();
+          }}
+          sx={{
+            borderRadius: '16px',
+            py: 1.5,
+            px: miniSidenav ? 1 : 2,
+            justifyContent: miniSidenav ? 'center' : 'flex-start',
+            color: darkMode ? '#ff8a80' : '#d32f2f',
+            background: darkMode 
+              ? 'rgba(244, 67, 54, 0.1)' 
+              : 'rgba(211, 47, 47, 0.06)',
+            border: darkMode 
+              ? '1px solid rgba(244, 67, 54, 0.2)' 
+              : '1px solid rgba(211, 47, 47, 0.15)',
+            transition: 'all 0.3s ease',
+            cursor: 'pointer',
+            '&:hover': {
+              background: darkMode 
+                ? 'rgba(244, 67, 54, 0.2)' 
+                : 'rgba(211, 47, 47, 0.12)',
+              transform: 'translateX(4px)',
+              boxShadow: darkMode 
+                ? '0 4px 15px rgba(244, 67, 54, 0.2)' 
+                : '0 4px 15px rgba(211, 47, 47, 0.1)',
+            }
+          }}
+        >
+          <ListItemIcon sx={{ 
+            minWidth: miniSidenav ? 'auto' : 40,
+            color: darkMode ? '#ff8a80' : '#d32f2f',
+            justifyContent: 'center',
+            transition: 'all 0.3s ease'
+          }}>
+            <LogoutIcon />
+          </ListItemIcon>
+          {!miniSidenav && (
+            <ListItemText 
+              primary="Keluar" 
+              sx={{
+                '& .MuiListItemText-primary': {
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  color: darkMode ? '#ff8a80' : '#d32f2f',
+                }
+              }}
+            />
+          )}
+        </ListItem>
+      </Box>
     </Box>
   )
 }

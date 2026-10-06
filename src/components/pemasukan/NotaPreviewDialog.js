@@ -41,17 +41,32 @@ export default function NotaPreviewDialog({ notaDialog, handleCloseNotaDialog })
   }
 
   const handleImageError = (e) => {
-    setAttemptedUrls(prev => [...prev, e.target.src])
-    
-    // Try alternative URLs
     const currentSrc = e.target.src
+    setAttemptedUrls(prev => [...prev, currentSrc])
+    
+    // Try alternative URLs on the correct backend
     if (!attemptedUrls.includes(currentSrc)) {
-      if (currentSrc.includes('localhost:8087/uploads/')) {
-        // Try without the uploads path
-        const fileName = currentSrc.split('/').pop()
-        const alternativeUrl = `http://localhost:8087/${fileName}`
-        e.target.src = alternativeUrl
-        return
+      const fileName = currentSrc.split('/').pop()
+      const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
+
+      if (currentSrc.includes('8087')) {
+        const altUrl = `${apiBase}/api/uploads/${fileName}`
+        if (!attemptedUrls.includes(altUrl)) {
+          e.target.src = altUrl
+          return
+        }
+      } else if (currentSrc.includes('/api/uploads/')) {
+        const altUrl = `${apiBase}/uploads/${fileName}`
+        if (!attemptedUrls.includes(altUrl)) {
+          e.target.src = altUrl
+          return
+        }
+      } else if (currentSrc.includes('/uploads/')) {
+        const altUrl = `${apiBase}/api/uploads/${fileName}`
+        if (!attemptedUrls.includes(altUrl)) {
+          e.target.src = altUrl
+          return
+        }
       }
     }
     

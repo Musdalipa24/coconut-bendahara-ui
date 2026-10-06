@@ -1,6 +1,7 @@
 import { Box, Typography, CircularProgress, useTheme } from '@mui/material'
 import { Card, CardHeader, CardBody } from '@/components/ui/card'
 import { useSoftUIController } from '@/context'
+import { formatDateTime } from '@/utils/formatters'
 
 export default function TransactionHistory({ transactions, loading, searchQuery, formatCurrency, emptyIcon }) {
   const [controller] = useSoftUIController()
@@ -174,7 +175,7 @@ export default function TransactionHistory({ transactions, loading, searchQuery,
                       padding: '16px',
                       color: isDarkMode ? '#ffffff' : '#000000',
                     }}>
-                      {item.tanggal}
+                      {formatDateTime(item.tanggal)}
                     </td>
                     <td style={{ 
                       padding: '16px',

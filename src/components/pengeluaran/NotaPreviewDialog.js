@@ -45,25 +45,6 @@ export default function NotaPreviewDialog({
 
   const handleImageError = () => {
     console.error('Failed to load image:', notaDialog.imageUrl)
-    
-    if (!fallbackAttempted) {
-      // Try fallback URL construction
-      const originalUrl = notaDialog.imageUrl
-      const fileName = originalUrl.split('/').pop()
-      const fallbackUrl = `http://localhost:8087/uploads/${fileName}`
-      
-      console.log('Attempting fallback URL:', fallbackUrl)
-      setFallbackAttempted(true)
-      
-      // Force re-render with fallback URL
-      setTimeout(() => {
-        if (notaDialog.imageUrl !== fallbackUrl) {
-          // This would need to be handled by parent component
-          console.log('Fallback needed, but cannot update URL from child component')
-        }
-      }, 100)
-    }
-    
     setImageError(true)
     setImageLoaded(false)
   }
@@ -213,6 +194,7 @@ export default function NotaPreviewDialog({
             alt="Nota Pengeluaran"
             width={800}
             height={600}
+            unoptimized
             onLoad={handleImageLoad}
             onError={handleImageError}
             style={{

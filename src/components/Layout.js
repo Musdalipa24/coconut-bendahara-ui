@@ -85,6 +85,13 @@ export default function DashboardLayout({ children }) {
     }
   }, [])
 
+  const handleLogout = () => {
+    Cookies.remove('authToken')
+    localStorage.removeItem('user')
+    setIsAuthenticated(false)
+    setOpenLoginDialog(true)
+  }
+
   return (
     <ThemeProvider theme={customTheme}>
       <Box sx={{
@@ -111,9 +118,14 @@ export default function DashboardLayout({ children }) {
           darkMode={darkMode} 
           toggleDarkMode={toggleDarkMode}
           setOpenPasswordDialog={setOpenPasswordDialog}
+          handleLogout={handleLogout}
         />
         
-        <DashboardDrawer darkMode={darkMode} miniSidenav={miniSidenav} />
+        <DashboardDrawer 
+          darkMode={darkMode} 
+          miniSidenav={miniSidenav} 
+          handleLogout={handleLogout}
+        />
         
         <Box sx={{
           flexGrow: 1,

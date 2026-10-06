@@ -61,7 +61,7 @@ export function AuthProvider({ children }) {
         Cookies.remove('authToken');
         localStorage.removeItem('user');
         setUser(null);
-        router.push('/authentication/sign-in');
+        window.location.href = '/dashboard';
     };
 
     const value = {

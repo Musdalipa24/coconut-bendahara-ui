@@ -33,17 +33,15 @@ export default function PemasukanFormDialog({
   const isDarkMode = theme.palette.mode === 'dark'
   const [previewUrl, setPreviewUrl] = useState('');
 
-  // Set default datetime to current time when opening for new entry
+  // Set default date to current date when opening for new entry
   useEffect(() => {
     if (showModal && !editingId && !formData.tanggal) {
       const now = new Date();
-      // Format to datetime-local input format (YYYY-MM-DDTHH:mm)
+      // Format to date input format (YYYY-MM-DD)
       const year = now.getFullYear();
       const month = String(now.getMonth() + 1).padStart(2, '0');
       const day = String(now.getDate()).padStart(2, '0');
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const formatted = `${year}-${month}-${day}T${hours}:${minutes}`;
+      const formatted = `${year}-${month}-${day}`;
       setFormData(prev => ({ ...prev, tanggal: formatted }));
     }
   }, [showModal, editingId, formData.tanggal, setFormData]);
@@ -55,9 +53,17 @@ export default function PemasukanFormDialog({
       setPreviewUrl(url);
       return () => URL.revokeObjectURL(url);
     } else if (formData.nota && typeof formData.nota === 'string') {
-      // If it's a string (file path from server), construct full URL
-      const baseUrl = process.env.NEXT_PUBLIC_UPLOAD_URL || 'http://localhost:8087/uploads/';
-      setPreviewUrl(`${baseUrl}${formData.nota}`);
+      if (formData.nota.startsWith('http://') || formData.nota.startsWith('https://')) {
+        setPreviewUrl(formData.nota);
+      } else {
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080';
+        const baseUrl = process.env.NEXT_PUBLIC_UPLOAD_URL || `${apiBase}/api/uploads/`;
+        const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+        let cleanPath = formData.nota.replace(/^\/+/, '');
+        cleanPath = cleanPath.replace(/^api\/uploads\//, '');
+        cleanPath = cleanPath.replace(/^uploads\//, '');
+        setPreviewUrl(`${cleanBaseUrl}${cleanPath}`);
+      }
     } else {
       setPreviewUrl('');
     }
@@ -192,9 +198,9 @@ export default function PemasukanFormDialog({
           }} />
         </Box>
         <TextField
-          label="Tanggal dan Waktu"
+          label="Tanggal"
           name="tanggal"
-          type="datetime-local"
+          type="date"
           value={formData.tanggal || ''}
           onChange={handleInputChange}
           fullWidth
@@ -242,17 +248,16 @@ export default function PemasukanFormDialog({
             '& .MuiOutlinedInput-input': {
               color: isDarkMode ? '#ffffff' : '#212121'
             },
-            '& input[type="datetime-local"]': {
+            '& input[type="date"]': {
               fontSize: '1rem',
               padding: '16.5px 14px',
               colorScheme: isDarkMode ? 'dark' : 'light'
             }
           }}
           inputProps={{ 
-            'aria-label': 'Tanggal dan waktu pemasukan',
-            step: '60' // Set step to 1 minute intervals
+            'aria-label': 'Tanggal pemasukan'
           }}
-          helperText="Pilih tanggal dan waktu pemasukan"
+          helperText="Pilih tanggal pemasukan"
         />
         <TextField
           label="Jumlah"
@@ -375,7 +380,6 @@ export default function PemasukanFormDialog({
           inputProps={{ 'aria-label': 'Kategori pemasukan' }}
         >
           <MenuItem value="Kategori">Pilih Kategori</MenuItem>
-          <MenuItem value="Iuran">Iuran</MenuItem>
           <MenuItem value="Sumbangan">Sumbangan</MenuItem>
           <MenuItem value="Dana Organisasi">Dana Organisasi</MenuItem>
           <MenuItem value="Lainnya">Lainnya</MenuItem>

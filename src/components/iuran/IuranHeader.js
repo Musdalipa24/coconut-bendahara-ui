@@ -44,7 +44,7 @@ export default function IuranHeader({
     setLoadingSubmit(true);
 
     try {
-      const newMember = { status, nra, nama };
+      const newMember = { jabatan: status, status: 'aktif', nra, nama };
       const response = await iuranService.addMember(newMember);
 
       if (response?.code >= 200 && response?.code < 300) {
@@ -183,7 +183,7 @@ export default function IuranHeader({
           }}>
             <Box component="form" onSubmit={handleSubmitIuran} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
 
-              {/* Pilihan Status */}
+              {/* Pilihan Jabatan */}
               <FormControl fullWidth>
                 <InputLabel sx={{ 
                   color: isDarkMode ? '#64b5f6' : '#1565c0',
@@ -191,7 +191,7 @@ export default function IuranHeader({
                     color: isDarkMode ? '#64b5f6' : '#1565c0'
                   }
                 }}>
-                  Status
+                  Jabatan
                 </InputLabel>
                 <Select
                   value={status}

@@ -4,11 +4,13 @@ import {
     IconButton, Dialog, DialogTitle, DialogContent,
     DialogActions, Button, TextField, MenuItem, Accordion,
     AccordionSummary, AccordionDetails, Typography, Tabs, Tab,
-    TableContainer, Box
+    TableContainer, Box, Chip, Tooltip, FormControl, InputLabel, Select
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import RestoreIcon from '@mui/icons-material/Restore';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
 import { iuranService } from '@/services/iuranService';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -41,6 +43,10 @@ export default function IuranTable({ onDelete, showSnackbar }) {
 
     const [openConfirmDelete, setOpenConfirmDelete] = useState(false);
     const [memberToDelete, setMemberToDelete] = useState(null);
+
+    const [openConfirmReactivate, setOpenConfirmReactivate] = useState(false);
+    const [memberToReactivate, setMemberToReactivate] = useState(null);
+    const [reactivateStatus, setReactivateStatus] = useState('anggota');
 
     useEffect(() => {
         const fetchMembers = async () => {
@@ -156,10 +162,10 @@ export default function IuranTable({ onDelete, showSnackbar }) {
                 await iuranService.deleteMember(memberToDelete.id_member);
                 const membersData = await iuranService.getAllMember();
                 setMembers(Array.isArray(membersData) ? membersData : []);
-                showSnackbar('Member berhasil dihapus', 'success');
+                showSnackbar('Member berhasil dinonaktifkan', 'success');
             } catch (error) {
-                console.error('Error deleting member:', error);
-                showSnackbar('Gagal menghapus member: ' + (error.message || 'Unknown error'), 'error');
+                console.error('Error deactivating member:', error);
+                showSnackbar('Gagal menonaktifkan member: ' + (error.message || 'Unknown error'), 'error');
             } finally {
                 setOpenConfirmDelete(false);
                 setMemberToDelete(null);
@@ -170,6 +176,47 @@ export default function IuranTable({ onDelete, showSnackbar }) {
     const handleCancelDelete = () => {
         setOpenConfirmDelete(false);
         setMemberToDelete(null);
+    };
+
+    const getMemberJabatan = (m) => {
+        if (m?.jabatan) return m.jabatan.toLowerCase();
+        if (m?.status?.toLowerCase() === 'bph') return 'bph';
+        return 'anggota';
+    };
+
+    const getMemberStatus = (m) => {
+        if (m?.status?.toLowerCase() === 'nonaktif' || m?.status?.toLowerCase() === 'inactive') {
+            return 'nonaktif';
+        }
+        return 'aktif';
+    };
+
+    const handleReactivate = (row) => {
+        setMemberToReactivate(row);
+        setReactivateStatus(getMemberJabatan(row));
+        setOpenConfirmReactivate(true);
+    };
+
+    const handleConfirmReactivate = async () => {
+        if (memberToReactivate) {
+            try {
+                await iuranService.reactivateMember(memberToReactivate.id_member, reactivateStatus);
+                const membersData = await iuranService.getAllMember();
+                setMembers(Array.isArray(membersData) ? membersData : []);
+                showSnackbar('Member berhasil diaktifkan kembali', 'success');
+            } catch (error) {
+                console.error('Error reactivating member:', error);
+                showSnackbar('Gagal mengaktifkan kembali member: ' + (error.message || 'Unknown error'), 'error');
+            } finally {
+                setOpenConfirmReactivate(false);
+                setMemberToReactivate(null);
+            }
+        }
+    };
+
+    const handleCancelReactivate = () => {
+        setOpenConfirmReactivate(false);
+        setMemberToReactivate(null);
     };
 
     const groupByPeriode = (data) => {
@@ -187,7 +234,7 @@ export default function IuranTable({ onDelete, showSnackbar }) {
             return (
                 <TableRow>
                     <TableCell 
-                      colSpan={5} 
+                      colSpan={6} 
                       align="center"
                       sx={{ 
                         py: 4,
@@ -220,7 +267,7 @@ export default function IuranTable({ onDelete, showSnackbar }) {
             return (
                 <TableRow>
                     <TableCell 
-                      colSpan={5} 
+                      colSpan={6} 
                       align="center" 
                       sx={{ 
                         py: 4, 
@@ -233,64 +280,146 @@ export default function IuranTable({ onDelete, showSnackbar }) {
             );
         }
         
-        return data.map((row, idx) => (
-            <TableRow 
-              key={row.id_member || idx}
-              sx={{
-                backgroundColor: idx % 2 === 0 
-                  ? (isDarkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.8)')
-                  : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(248, 249, 250, 0.8)'),
-                '&:hover': {
-                  backgroundColor: isDarkMode 
-                    ? 'rgba(100, 181, 246, 0.1)' 
-                    : 'rgba(25, 118, 210, 0.05)',
-                }
-              }}
-            >
-                <TableCell sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
-                  {row.nra}
-                </TableCell>
-                <TableCell sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
-                  {row.nama}
-                </TableCell>
-                <TableCell sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
-                  {row.status}
-                </TableCell>
-                <TableCell
-                    sx={{ 
-                      cursor: 'pointer', 
-                      color: isDarkMode ? '#90caf9' : '#1976d2', 
-                      textDecoration: 'underline',
-                      '&:hover': {
-                        color: isDarkMode ? '#64b5f6' : '#0d47a1'
-                      }
-                    }}
-                    onClick={() => handleOpenDialog(row.iuran)}
+        return data.map((row, idx) => {
+            const isNonaktif = getMemberStatus(row) === 'nonaktif';
+            const jabatan = getMemberJabatan(row);
+
+            return (
+                <TableRow 
+                  key={row.id_member || idx}
+                  sx={{
+                    backgroundColor: idx % 2 === 0 
+                      ? (isDarkMode ? 'rgba(255, 255, 255, 0.02)' : 'rgba(255, 255, 255, 0.8)')
+                      : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(248, 249, 250, 0.8)'),
+                    '&:hover': {
+                      backgroundColor: isDarkMode 
+                        ? 'rgba(100, 181, 246, 0.1)' 
+                        : 'rgba(25, 118, 210, 0.05)',
+                    },
+                    opacity: isNonaktif ? 0.75 : 1,
+                  }}
                 >
-                    {Array.isArray(row.iuran)
-                        ? `${row.iuran.length} data`
-                        : '-'}
-                </TableCell>
-                <TableCell>
-                    <IconButton 
-                      sx={{ color: isDarkMode ? '#90caf9' : '#1976d2' }} 
-                      onClick={() => handleOpenEdit(row)}
+                    <TableCell sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
+                      {row.nra}
+                    </TableCell>
+                    <TableCell sx={{ color: isDarkMode ? '#ffffff' : '#000000', fontWeight: isNonaktif ? 400 : 500 }}>
+                      {row.nama}
+                    </TableCell>
+                    {/* Kolom Jabatan */}
+                    <TableCell>
+                      {jabatan === 'bph' ? (
+                        <Chip 
+                          label="BPH" 
+                          size="small" 
+                          sx={{ 
+                            backgroundColor: isDarkMode ? 'rgba(100, 181, 246, 0.2)' : 'rgba(25, 118, 210, 0.1)', 
+                            color: isDarkMode ? '#90caf9' : '#1976d2',
+                            fontWeight: 600 
+                          }} 
+                        />
+                      ) : (
+                        <Chip 
+                          label="Anggota" 
+                          size="small" 
+                          sx={{ 
+                            backgroundColor: isDarkMode ? 'rgba(38, 166, 154, 0.2)' : 'rgba(0, 121, 107, 0.1)', 
+                            color: isDarkMode ? '#80cbc4' : '#00796b',
+                            fontWeight: 600 
+                          }} 
+                        />
+                      )}
+                    </TableCell>
+                    {/* Kolom Status (Aktif / Nonaktif) */}
+                    <TableCell>
+                      {!isNonaktif ? (
+                        <Chip 
+                          label="Aktif" 
+                          size="small" 
+                          sx={{ 
+                            backgroundColor: isDarkMode ? 'rgba(76, 175, 80, 0.2)' : 'rgba(46, 125, 50, 0.1)', 
+                            color: isDarkMode ? '#81c784' : '#2e7d32',
+                            fontWeight: 600 
+                          }} 
+                        />
+                      ) : (
+                        <Chip 
+                          label="Nonaktif" 
+                          size="small" 
+                          sx={{ 
+                            backgroundColor: isDarkMode ? 'rgba(255, 152, 0, 0.2)' : 'rgba(255, 152, 0, 0.1)', 
+                            color: isDarkMode ? '#ffb74d' : '#f57c00',
+                            fontWeight: 600,
+                            border: '1px solid',
+                            borderColor: isDarkMode ? 'rgba(255, 152, 0, 0.4)' : 'rgba(255, 152, 0, 0.3)'
+                          }} 
+                        />
+                      )}
+                    </TableCell>
+                    {/* Kolom Iuran */}
+                    <TableCell
+                        sx={{ 
+                          cursor: 'pointer', 
+                          color: isDarkMode ? '#90caf9' : '#1976d2', 
+                          textDecoration: 'underline',
+                          '&:hover': {
+                            color: isDarkMode ? '#64b5f6' : '#0d47a1'
+                          }
+                        }}
+                        onClick={() => handleOpenDialog(row.iuran)}
                     >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton 
-                      sx={{ color: isDarkMode ? '#e57373' : '#d32f2f' }} 
-                      onClick={() => handleDelete(row)}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                </TableCell>
-            </TableRow>
-        ));
+                        {Array.isArray(row.iuran)
+                            ? `${row.iuran.length} data`
+                            : '-'}
+                    </TableCell>
+                    {/* Kolom Aksi */}
+                    <TableCell>
+                      {isNonaktif ? (
+                        <Tooltip title="Aktifkan Kembali Member">
+                          <IconButton 
+                            sx={{ 
+                              color: isDarkMode ? '#81c784' : '#2e7d32',
+                              '&:hover': {
+                                backgroundColor: isDarkMode ? 'rgba(129, 199, 132, 0.15)' : 'rgba(46, 125, 50, 0.1)'
+                              }
+                            }} 
+                            onClick={() => handleReactivate(row)}
+                          >
+                            <RestoreIcon />
+                          </IconButton>
+                        </Tooltip>
+                      ) : (
+                        <>
+                          <Tooltip title="Input / Edit Iuran">
+                            <IconButton 
+                              sx={{ color: isDarkMode ? '#90caf9' : '#1976d2' }} 
+                              onClick={() => handleOpenEdit(row)}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Nonaktifkan Member">
+                            <IconButton 
+                              sx={{ 
+                                color: isDarkMode ? '#ffb74d' : '#f57c00',
+                                '&:hover': {
+                                  backgroundColor: isDarkMode ? 'rgba(255, 183, 77, 0.15)' : 'rgba(245, 124, 0, 0.1)'
+                                }
+                              }} 
+                              onClick={() => handleDelete(row)}
+                            >
+                              <PersonOffIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </>
+                      )}
+                    </TableCell>
+                </TableRow>
+            );
+        });
     };
 
-    const bphMembers = members.filter(m => m.status?.toLowerCase() === 'bph');
-    const regularMembers = members.filter(m => m.status?.toLowerCase() !== 'bph');
+    const bphMembers = members.filter(m => getMemberJabatan(m) === 'bph');
+    const regularMembers = members.filter(m => getMemberJabatan(m) === 'anggota');
 
     return (
         <>
@@ -311,8 +440,8 @@ export default function IuranTable({ onDelete, showSnackbar }) {
                 }
               }}
             >
-                <Tab label="BPH" />
-                <Tab label="Anggota" />
+                <Tab label={`BPH (${bphMembers.length})`} />
+                <Tab label={`Anggota (${regularMembers.length})`} />
             </Tabs>
 
             {/* Table */}
@@ -356,6 +485,12 @@ export default function IuranTable({ onDelete, showSnackbar }) {
                               color: isDarkMode ? '#90caf9' : '#1976d2', 
                               fontWeight: 600 
                             }}>
+                              Jabatan
+                            </TableCell>
+                            <TableCell sx={{ 
+                              color: isDarkMode ? '#90caf9' : '#1976d2', 
+                              fontWeight: 600 
+                            }}>
                               Status
                             </TableCell>
                             <TableCell sx={{ 
@@ -373,9 +508,8 @@ export default function IuranTable({ onDelete, showSnackbar }) {
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {tabValue === 0
-                            ? renderTableRows(bphMembers)
-                            : renderTableRows(regularMembers)}
+                        {tabValue === 0 && renderTableRows(bphMembers)}
+                        {tabValue === 1 && renderTableRows(regularMembers)}
                     </TableBody>
                 </Table>
             </TableContainer>
@@ -663,11 +797,12 @@ export default function IuranTable({ onDelete, showSnackbar }) {
                 </DialogActions>
             </Dialog>
 
-            {/* Dialog Confirm Delete */}
+            {/* Dialog Confirm Deactivate */}
             <Dialog 
               open={openConfirmDelete} 
               onClose={handleCancelDelete} 
               maxWidth="xs"
+              fullWidth
               PaperProps={{
                 sx: {
                   background: isDarkMode 
@@ -677,18 +812,22 @@ export default function IuranTable({ onDelete, showSnackbar }) {
                   border: isDarkMode 
                     ? '1px solid rgba(255, 255, 255, 0.1)'
                     : '1px solid rgba(0, 0, 0, 0.1)',
+                  borderRadius: '16px'
                 }
               }}
             >
-                <DialogTitle sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
-                  Konfirmasi Hapus
+                <DialogTitle sx={{ color: isDarkMode ? '#ffffff' : '#000000', fontWeight: 600 }}>
+                  Nonaktifkan Member
                 </DialogTitle>
                 <DialogContent>
-                    <Typography sx={{ color: isDarkMode ? '#ffffff' : '#000000' }}>
-                        Apakah Anda yakin ingin menghapus member <strong>{memberToDelete?.nama || 'ini'}</strong>? Aksi ini tidak dapat dibatalkan.
+                    <Typography sx={{ color: isDarkMode ? '#ffffff' : '#000000', mb: 1 }}>
+                        Apakah Anda yakin ingin menonaktifkan member <strong>{memberToDelete?.nama || 'ini'}</strong> ({memberToDelete?.nra})?
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: isDarkMode ? '#ffb74d' : '#e65100', mt: 1, p: 1.5, borderRadius: '8px', backgroundColor: isDarkMode ? 'rgba(255, 183, 77, 0.1)' : 'rgba(255, 152, 0, 0.08)' }}>
+                        Member akan berstatus <strong>Nonaktif</strong>. Riwayat pembayaran iuran yang sudah ada tetap aman tersimpan, dan member tidak lagi berkewajiban membayar iuran berikutnya.
                     </Typography>
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ p: 2 }}>
                     <Button 
                       onClick={handleCancelDelete} 
                       sx={{ color: isDarkMode ? '#b0b0b0' : '#666' }}
@@ -700,11 +839,80 @@ export default function IuranTable({ onDelete, showSnackbar }) {
                       variant="contained"
                       sx={{
                         background: isDarkMode 
-                          ? 'linear-gradient(45deg, #e57373, #ef5350)'
-                          : 'linear-gradient(45deg, #d32f2f, #f44336)'
+                          ? 'linear-gradient(45deg, #ff9800, #f57c00)'
+                          : 'linear-gradient(45deg, #f57c00, #ef6c00)',
+                        color: '#fff',
+                        fontWeight: 600
                       }}
                     >
-                        Hapus
+                        Nonaktifkan
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Dialog Confirm Reactivate */}
+            <Dialog 
+              open={openConfirmReactivate} 
+              onClose={handleCancelReactivate} 
+              maxWidth="xs"
+              fullWidth
+              PaperProps={{
+                sx: {
+                  background: isDarkMode 
+                    ? 'linear-gradient(135deg, rgba(40, 40, 40, 0.95) 0%, rgba(60, 60, 60, 0.9) 100%)'
+                    : 'linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 249, 250, 0.9) 100%)',
+                  backdropFilter: 'blur(20px)',
+                  border: isDarkMode 
+                    ? '1px solid rgba(255, 255, 255, 0.1)'
+                    : '1px solid rgba(0, 0, 0, 0.1)',
+                  borderRadius: '16px'
+                }
+              }}
+            >
+                <DialogTitle sx={{ color: isDarkMode ? '#ffffff' : '#000000', fontWeight: 600 }}>
+                  Aktifkan Kembali Member
+                </DialogTitle>
+                <DialogContent>
+                    <Typography sx={{ color: isDarkMode ? '#ffffff' : '#000000', mb: 2 }}>
+                        Aktifkan kembali member <strong>{memberToReactivate?.nama}</strong> ({memberToReactivate?.nra}) agar dapat membayar iuran kembali:
+                    </Typography>
+                    <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                        <InputLabel sx={{ color: isDarkMode ? '#b0b0b0' : '#666' }}>Pilih Jabatan</InputLabel>
+                        <Select
+                            value={reactivateStatus}
+                            label="Pilih Jabatan"
+                            onChange={(e) => setReactivateStatus(e.target.value)}
+                            sx={{
+                              color: isDarkMode ? '#ffffff' : '#000000',
+                              '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.23)',
+                              },
+                            }}
+                        >
+                            <MenuItem value="anggota">Anggota</MenuItem>
+                            <MenuItem value="bph">BPH</MenuItem>
+                        </Select>
+                    </FormControl>
+                </DialogContent>
+                <DialogActions sx={{ p: 2 }}>
+                    <Button 
+                      onClick={handleCancelReactivate} 
+                      sx={{ color: isDarkMode ? '#b0b0b0' : '#666' }}
+                    >
+                        Batal
+                    </Button>
+                    <Button 
+                      onClick={handleConfirmReactivate} 
+                      variant="contained"
+                      sx={{
+                        background: isDarkMode 
+                          ? 'linear-gradient(45deg, #4caf50, #66bb6a)'
+                          : 'linear-gradient(45deg, #2e7d32, #43a047)',
+                        color: '#fff',
+                        fontWeight: 600
+                      }}
+                    >
+                        Aktifkan Kembali
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -1,3 +1,5 @@
+import { getAuthHeaders } from '@/utils/authHeader';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8087'
 
 export const laporanService = {
@@ -5,6 +7,9 @@ export const laporanService = {
         try {
             const response = await fetch(`${API_BASE_URL}/api/laporan/getall`, {
                 method: 'GET',
+                headers: {
+                    ...getAuthHeaders()
+                },
                 credentials: 'include'
             })
             if (!response.ok) {
@@ -29,6 +34,9 @@ export const laporanService = {
         try {
             const response = await fetch(`${API_BASE_URL}/api/laporan/saldo`, {
                 method: 'GET',
+                headers: {
+                    ...getAuthHeaders()
+                },
                 credentials: 'include'
             })
             if (!response.ok) {
@@ -58,6 +66,9 @@ export const laporanService = {
         try {
             const response = await fetch(`${API_BASE_URL}/api/laporan/pengeluaran`, {
                 method: 'GET',
+                headers: {
+                    ...getAuthHeaders()
+                },
                 credentials: 'include'
             })
             if (!response.ok) {
@@ -82,6 +93,9 @@ export const laporanService = {
         try {
             const response = await fetch(`${API_BASE_URL}/api/laporan/pemasukan`, {
                 method: 'GET',
+                headers: {
+                    ...getAuthHeaders()
+                },
                 credentials: 'include'
             })
             if (!response.ok) {
@@ -108,6 +122,9 @@ export const laporanService = {
                 `${API_BASE_URL}/api/laporan/range?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`,
                 {
                     method: 'GET',
+                    headers: {
+                        ...getAuthHeaders()
+                    },
                     credentials: 'include'
                 }
             )

@@ -2,7 +2,7 @@ import React from 'react';
 import { Menu, MenuItem, useTheme } from '@mui/material';
 import { FileDownload as FileDownloadIcon, PictureAsPdf as PdfIcon, TableView as ExcelIcon } from '@mui/icons-material';
 
-export default function DownloadMenu({ anchorEl, open, handleClose, generatePDF, exportToExcel }) {
+export default function DownloadMenu({ anchorEl, open, handleClose, generatePDF, exportToExcel, downloadType }) {
   const theme = useTheme();
   
   const handlePDFDownload = async () => {
@@ -49,20 +49,22 @@ export default function DownloadMenu({ anchorEl, open, handleClose, generatePDF,
       >
         <PdfIcon sx={{ mr: 1, color: '#f44336' }} /> Unduh PDF
       </MenuItem>
-      <MenuItem 
-        onClick={exportToExcel} 
-        sx={{ 
-          py: { xs: 1.5, sm: 1 },
-          color: theme.palette.text.primary,
-          '&:hover': {
-            backgroundColor: theme.palette.mode === 'dark' 
-              ? 'rgba(255, 255, 255, 0.1)' 
-              : 'rgba(0, 0, 0, 0.04)'
-          }
-        }}
-      >
-        <ExcelIcon sx={{ mr: 1, color: '#4CAF50' }} /> Unduh Excel
-      </MenuItem>
+      {downloadType !== 'iuran' && (
+        <MenuItem 
+          onClick={exportToExcel} 
+          sx={{ 
+            py: { xs: 1.5, sm: 1 },
+            color: theme.palette.text.primary,
+            '&:hover': {
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.1)' 
+                : 'rgba(0, 0, 0, 0.04)'
+            }
+          }}
+        >
+          <ExcelIcon sx={{ mr: 1, color: '#4CAF50' }} /> Unduh Excel
+        </MenuItem>
+      )}
     </Menu>
   );
 }

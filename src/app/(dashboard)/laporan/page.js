@@ -23,6 +23,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 import { laporanService } from '@/services/laporanService';
+import { iuranService } from '@/services/iuranService';
 import { AnimatedContainer, AnimatedTypography, StyledFormControl } from '@/components/laporanKeuangan/styles';
 import SummaryCards from '@/components/laporanKeuangan/SummaryCards';
 import LaporanTable from '@/components/laporanKeuangan/LaporanTable';
@@ -110,6 +111,7 @@ export default function LaporanKeuangan() {
   const [alert, setAlert] = useState({ open: false, message: '', severity: 'success' })
   const [pdfPreview, setPdfPreview] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [downloadType, setDownloadType] = useState('keseluruhan')
   
   const customTheme = createCustomTheme(isDarkMode)
   const open = Boolean(anchorEl)
@@ -167,16 +169,23 @@ export default function LaporanKeuangan() {
   const formatDateTime = (backendDateString) => {
     if (!backendDateString) return '-'
     try {
-      const [datePart, timePart] = backendDateString.split(' ')
-      const [day, month, year] = datePart.split('-')
-      const [hours, minutes] = timePart.split(':')
-      return new Date(year, month - 1, day, hours, minutes).toLocaleString('id-ID', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      const [datePart] = backendDateString.split(' ')
+      const parts = datePart.split(/[-/]/)
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`
+        } else {
+          return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`
+        }
+      }
+      const date = new Date(backendDateString)
+      if (!isNaN(date.getTime())) {
+        const day = String(date.getDate()).padStart(2, '0')
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const year = date.getFullYear()
+        return `${day}/${month}/${year}`
+      }
+      return backendDateString
     } catch (e) {
       console.error('Error formatting date:', e)
       return backendDateString
@@ -322,7 +331,10 @@ export default function LaporanKeuangan() {
           const [hoursB, minutesB] = timePartB ? timePartB.split(':') : ['00', '00']
           const dateB = new Date(yearB, monthB - 1, dayB, hoursB, minutesB)
           
-          return dateB - dateA // Descending order (newest first at top for website)
+          const dateDiff = dateB - dateA // Descending order (newest first at top for website)
+          if (dateDiff !== 0) return dateDiff
+          // Same date+time: sort by saldo descending (higher saldo = more recent transaction)
+          return (b.total_saldo || 0) - (a.total_saldo || 0)
         } catch (e) {
           console.error('Error parsing dates for sorting:', e)
           return 0
@@ -414,18 +426,21 @@ export default function LaporanKeuangan() {
   }
 
   const generatePDF = async () => {
+    if (downloadType === 'iuran') {
+      return generateIuranPDF()
+    }
+
     try {
-      const doc = new jsPDF('p', 'mm', 'a4') // Changed to portrait A4
+      const doc = new jsPDF('p', 'mm', 'a4') // Portrait A4
       const pageWidth = doc.internal.pageSize.width
       const pageHeight = doc.internal.pageSize.height
       
-      // Margin 4433: Top=40mm, Left=40mm, Bottom=30mm, Right=30mm
       const marginTop = 20 
       const marginLeft = 30
       const marginBottom = 30
       const marginRight = 30
       
-      let currentY = 15  // Start from very top
+      let currentY = 15
 
       // Set font
       doc.setFont('times', 'normal')
@@ -438,18 +453,15 @@ export default function LaporanKeuangan() {
         console.log('Could not load logo, using fallback')
       }
 
-      // HEADER SECTION - FIXED AT TOP OF PAGE
+      // HEADER SECTION
       const createHeader = () => {
-        // Header with Logo and Organization Info
-        const logoHeight = 20 // Smaller logo for header
+        const logoHeight = 20
         let logoWidth = logoHeight
         let logoX = marginLeft
-        let logoY = 15 // Fixed at top
+        let logoY = 15
         
-        // Calculate proper logo dimensions if we have the image
         if (logoData) {
           logoWidth = logoHeight * logoData.aspectRatio
-          // Make sure logo doesn't take too much space horizontally (max 25mm)
           const maxLogoWidth = 25
           if (logoWidth > maxLogoWidth) {
             logoWidth = maxLogoWidth
@@ -457,24 +469,19 @@ export default function LaporanKeuangan() {
           }
         }
         
-        // Add logo
         if (logoData) {
           doc.addImage(logoData.base64, 'PNG', logoX, logoY, logoWidth, logoHeight)
         } else {
-          // Fallback: create a placeholder circle for the logo
           const fallbackSize = Math.min(logoWidth, logoHeight)
           doc.setDrawColor(41, 121, 255)
           doc.setFillColor(41, 121, 255)
           doc.circle(logoX + fallbackSize/2, logoY + fallbackSize/2, fallbackSize/2, 'F')
-          
-          // Add anchor symbol in the circle (simplified representation)
           doc.setTextColor(255, 255, 255)
           doc.setFontSize(10)
           doc.setFont('times', 'bold')
           doc.text('C', logoX + fallbackSize/2, logoY + fallbackSize/2 + 2, { align: 'center' })
         }
 
-        // Organization header text - CENTERED layout
         const centerX = pageWidth / 2
         const textY = logoY + 5
         
@@ -487,39 +494,29 @@ export default function LaporanKeuangan() {
         doc.setFont('times', 'bold')
         doc.text('(COCONUT)', centerX, textY + 6, { align: 'center' })
         
-        // Address and contact info - CENTERED
         doc.setFontSize(8)
         doc.setFont('times', 'normal')
         doc.text('Sekretariat: Jl. Monumen Emmy Saelan III No. 70 Karuntung, Kec. Rappocini, Makassar', centerX, textY + 11, { align: 'center' })
         
-        // Contact info with blue website
         const contactY = textY + 16
         const contactText = 'Telp. 085240791254/089580126297, Website: '
         const websiteText = 'www.coconut.or.id'
         const emailText = ' , Email: hello@coconut.or.id'
 
-        // Calculate text widths for positioning
         const contactWidth = doc.getTextWidth(contactText)
         const websiteWidth = doc.getTextWidth(websiteText)
         const emailWidth = doc.getTextWidth(emailText)
         const totalWidth = contactWidth + websiteWidth + emailWidth
         
-        // Start position for centered text
         const startX = centerX - (totalWidth / 2)
         
-        // Draw contact info (black)
         doc.setTextColor(0, 0, 0)
         doc.text(contactText, startX, contactY)
-        
-        // Draw website (blue)
         doc.setTextColor(0, 0, 255)
         doc.text(websiteText, startX + contactWidth, contactY)
-        
-        // Draw email (black)
         doc.setTextColor(0, 0, 0)
         doc.text(emailText, startX + contactWidth + websiteWidth, contactY)
 
-        // Header separator lines (three lines like in the image)
         const headerEndY = logoY + Math.max(logoHeight, 19) + 4
         doc.setDrawColor(100, 100, 100)
         doc.setLineWidth(0.1)
@@ -533,60 +530,53 @@ export default function LaporanKeuangan() {
         doc.setLineWidth(0.1)
         doc.line(marginLeft, headerEndY + 1.9, pageWidth - marginRight, headerEndY + 1.9)
 
-        return headerEndY + 8 // Return Y position after header
+        return headerEndY + 8
       }
 
-      // FOOTER FUNCTION (without page numbers - added later)
       const createFooter = () => {
-        const footerY = pageHeight - 15 // Fixed at bottom
+        const footerY = pageHeight - 15
         doc.setFontSize(6)
         doc.setFont('times', 'normal')
         doc.setTextColor(100, 100, 100)
-        
-        // Credit text on the left
         doc.text('Dibuat oleh Sistem Keuangan Organisasi COCONUT Computer Club', marginLeft, footerY)
       }
 
-      // FUNCTION TO ADD PAGE NUMBERS AFTER ALL CONTENT IS CREATED
       const addPageNumbers = () => {
         const totalPages = doc.internal.getNumberOfPages()
-        
         for (let i = 1; i <= totalPages; i++) {
           doc.setPage(i)
           const footerY = pageHeight - 15
           doc.setFontSize(6)
           doc.setFont('times', 'normal')
           doc.setTextColor(100, 100, 100)
-          
-          // Page number on the right
           const str = `Halaman ${i} dari ${totalPages}`
           doc.text(str, pageWidth - marginRight, footerY, { align: 'right' })
         }
       }
 
-      // Create header and get starting position for content
       currentY = createHeader()
-
-      // Content starts after header
       currentY += 5
 
-      // Title for the report
+      // Title for the report based on downloadType
+      const reportTitle = downloadType === 'pemasukan' 
+        ? 'LAPORAN PEMASUKAN' 
+        : downloadType === 'pengeluaran' 
+          ? 'LAPORAN PENGELUARAN' 
+          : 'LAPORAN KEUANGAN'
+
       doc.setFontSize(9)
       doc.setTextColor(0, 0, 0)
       doc.setFont('times', 'bold')
-      doc.text('LAPORAN KEUANGAN', pageWidth / 2, currentY, { align: 'center' })
+      doc.text(reportTitle, pageWidth / 2, currentY, { align: 'center' })
       currentY += 6
 
       const periodLabel = timeRangeOptions.find(opt => opt.value === timeRange)?.label || 'Semua'
       
-      // Generate actual date range for period display
       let periodText = 'Periode: '
       if (timeRange === 'all') {
-        // For 'all', find the date range from actual data
         if (filteredData && filteredData.length > 0) {
           const dates = filteredData.map(item => {
             if (item.tanggal) {
-              // Parse backend date format (DD-MM-YYYY HH:mm)
               const [datePart] = item.tanggal.split(' ')
               const [day, month, year] = datePart.split('-')
               return new Date(year, month - 1, day)
@@ -606,12 +596,11 @@ export default function LaporanKeuangan() {
           periodText += 'Tidak ada data'
         }
       } else {
-        // For specific ranges, calculate the actual dates
         const { start, end } = getDateRange(timeRange)
         if (start && end) {
           const startDate = new Date(start)
           const endDate = new Date(end)
-          endDate.setDate(endDate.getDate() - 1) // Adjust end date to be inclusive
+          endDate.setDate(endDate.getDate() - 1)
           const formatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' }
           periodText += `${startDate.toLocaleDateString('id-ID', formatOptions)} - ${endDate.toLocaleDateString('id-ID', formatOptions)}`
         } else {
@@ -631,11 +620,24 @@ export default function LaporanKeuangan() {
       doc.text('Ringkasan Keuangan', marginLeft, currentY)
       currentY += 6
 
-      const summaryData = [
-        ['Total Pemasukan', formatRupiah(totalPemasukan)],
-        ['Total Pengeluaran', formatRupiah(totalPengeluaran)],
-        ['Saldo Akhir', formatRupiah(saldoAkhir)]
-      ]
+      let summaryData = []
+      if (downloadType === 'pemasukan') {
+        const totalMasukFiltered = filteredData.reduce((acc, curr) => acc + (Number(curr.pemasukan) || 0), 0)
+        summaryData = [
+          ['Total Pemasukan', formatRupiah(totalMasukFiltered || totalPemasukan)]
+        ]
+      } else if (downloadType === 'pengeluaran') {
+        const totalKeluarFiltered = filteredData.reduce((acc, curr) => acc + (Number(curr.pengeluaran) || 0), 0)
+        summaryData = [
+          ['Total Pengeluaran', formatRupiah(totalKeluarFiltered || totalPengeluaran)]
+        ]
+      } else {
+        summaryData = [
+          ['Total Pemasukan', formatRupiah(totalPemasukan)],
+          ['Total Pengeluaran', formatRupiah(totalPengeluaran)],
+          ['Saldo Akhir', formatRupiah(saldoAkhir)]
+        ]
+      }
 
       autoTable(doc, {
         startY: currentY,
@@ -648,7 +650,7 @@ export default function LaporanKeuangan() {
           overflow: 'linebreak'
         },
         headStyles: {
-          fillColor: [25, 118, 210], // MUI primary color
+          fillColor: [25, 118, 210],
           textColor: [255, 255, 255],
           fontStyle: 'bold',
           halign: 'center',
@@ -664,37 +666,42 @@ export default function LaporanKeuangan() {
           0: { halign: 'left', cellWidth: 70 },
           1: { halign: 'right', cellWidth: 'auto' }
         },
-        margin: { left: marginLeft, right: marginRight, bottom: 25, top: 55 }, // Added top margin for consistent spacing
+        margin: { left: marginLeft, right: marginRight, bottom: 25, top: 55 },
         theme: 'grid',
         tableWidth: 'auto',
         didDrawPage: (data) => {
-          // Add header to each page if needed
           if (data.pageNumber > 1) {
             createHeader()
           }
-          // Add footer to each page
           createFooter()
         }
       })
 
       currentY = doc.lastAutoTable.finalY + 10
 
-      // Tabel Transaksi
+      // Detail Transaksi
       doc.setFontSize(10)
       doc.setFont('times', 'bold')
       doc.text('Detail Transaksi', marginLeft, currentY)
       currentY += 6
 
-      if (filteredData.length === 0) {
+      // Filter rows based on downloadType
+      let targetRows = filteredData
+      if (downloadType === 'pemasukan') {
+        targetRows = filteredData.filter(row => Number(row.pemasukan) > 0)
+      } else if (downloadType === 'pengeluaran') {
+        targetRows = filteredData.filter(row => Number(row.pengeluaran) > 0)
+      }
+
+      if (targetRows.length === 0) {
         doc.setFontSize(8)
         doc.setFont('times', 'italic')
         doc.setTextColor(100, 100, 100)
         doc.text('Tidak ada transaksi untuk periode ini', marginLeft, currentY)
       } else {
-        const sortedData = [...filteredData].sort((a, b) => {
+        const sortedData = [...targetRows].sort((a, b) => {
           if (!a.tanggal || !b.tanggal) return 0
           try {
-            // Parse backend date format (DD-MM-YYYY HH:mm)
             const [datePartA, timePartA] = a.tanggal.split(' ')
             const [dayA, monthA, yearA] = datePartA.split('-')
             const [hoursA, minutesA] = timePartA ? timePartA.split(':') : ['00', '00']
@@ -712,15 +719,55 @@ export default function LaporanKeuangan() {
           }
         })
 
-        const tableData = sortedData.map(row => [
-          formatDateTime(row.tanggal),
-          row.keterangan,
-          formatRupiah(row.pemasukan || 0),
-          formatRupiah(row.pengeluaran || 0),
-          formatRupiah(row.total_saldo || 0)
-        ])
+        let tableColumns = []
+        let tableData = []
+        let columnStyles = {}
 
-        const tableColumns = ['Tanggal', 'Keterangan', 'Pemasukan', 'Pengeluaran', 'Saldo']
+        if (downloadType === 'pemasukan') {
+          tableColumns = ['Tanggal', 'Keterangan', 'Pemasukan', 'Saldo']
+          tableData = sortedData.map(row => [
+            formatDateTime(row.tanggal),
+            row.keterangan,
+            formatRupiah(row.pemasukan || 0),
+            formatRupiah(row.total_saldo || 0)
+          ])
+          columnStyles = {
+            0: { cellWidth: 30, halign: 'center' },
+            1: { cellWidth: 'auto', halign: 'left' },
+            2: { cellWidth: 35, halign: 'right' },
+            3: { cellWidth: 35, halign: 'right' }
+          }
+        } else if (downloadType === 'pengeluaran') {
+          tableColumns = ['Tanggal', 'Keterangan', 'Pengeluaran', 'Saldo']
+          tableData = sortedData.map(row => [
+            formatDateTime(row.tanggal),
+            row.keterangan,
+            formatRupiah(row.pengeluaran || 0),
+            formatRupiah(row.total_saldo || 0)
+          ])
+          columnStyles = {
+            0: { cellWidth: 30, halign: 'center' },
+            1: { cellWidth: 'auto', halign: 'left' },
+            2: { cellWidth: 35, halign: 'right' },
+            3: { cellWidth: 35, halign: 'right' }
+          }
+        } else {
+          tableColumns = ['Tanggal', 'Keterangan', 'Pemasukan', 'Pengeluaran', 'Saldo']
+          tableData = sortedData.map(row => [
+            formatDateTime(row.tanggal),
+            row.keterangan,
+            formatRupiah(row.pemasukan || 0),
+            formatRupiah(row.pengeluaran || 0),
+            formatRupiah(row.total_saldo || 0)
+          ])
+          columnStyles = {
+            0: { cellWidth: 30, halign: 'center' },
+            1: { cellWidth: 'auto', halign: 'left' },
+            2: { cellWidth: 25, halign: 'right' },
+            3: { cellWidth: 25, halign: 'right' },
+            4: { cellWidth: 25, halign: 'right' }
+          }
+        }
 
         autoTable(doc, {
           startY: currentY,
@@ -733,7 +780,7 @@ export default function LaporanKeuangan() {
             overflow: 'linebreak'
           },
           headStyles: {
-            fillColor: [25, 118, 210], // MUI primary color
+            fillColor: [25, 118, 210],
             textColor: [255, 255, 255],
             fontStyle: 'bold',
             halign: 'center',
@@ -747,43 +794,35 @@ export default function LaporanKeuangan() {
           alternateRowStyles: {
             fillColor: [245, 245, 245]
           },
-          columnStyles: {
-            0: { cellWidth: 30, halign: 'center' },
-            1: { cellWidth: 'auto', halign: 'left' },
-            2: { cellWidth: 25, halign: 'right' },
-            3: { cellWidth: 25, halign: 'right' },
-            4: { cellWidth: 25, halign: 'right' }
-          },
-          margin: { left: marginLeft, right: marginRight, bottom: 25, top: 55 }, // Added top margin to ensure content below header
+          columnStyles: columnStyles,
+          margin: { left: marginLeft, right: marginRight, bottom: 25, top: 55 },
           theme: 'grid',
           tableWidth: 'auto',
           didDrawPage: (data) => {
-            // Add header to each page
             if (data.pageNumber > 1) {
               const headerEndY = createHeader()
-              // Ensure table starts below header on new pages
               if (data.table && data.table.startPageY) {
                 data.table.startPageY = headerEndY + 5
               }
             }
-            // Add footer to each page
             createFooter()
           }
         })
       }
 
-      // Add footer to first page
       createFooter()
-
-      // Add page numbers to all pages after all content is generated
       addPageNumbers()
 
-      // Generate PDF blob for preview
       const pdfBlob = doc.output('blob')
       const pdfUrl = URL.createObjectURL(pdfBlob)
       
-      // Set preview state
-      setPdfPreview({ url: pdfUrl, doc: doc })
+      const defaultFilename = downloadType === 'pemasukan'
+        ? 'laporan-pemasukan-coconut.pdf'
+        : downloadType === 'pengeluaran'
+          ? 'laporan-pengeluaran-coconut.pdf'
+          : 'laporan-keuangan-coconut.pdf'
+
+      setPdfPreview({ url: pdfUrl, doc: doc, filename: defaultFilename })
       setShowPreview(true)
       handleClose()
     } catch (error) {
@@ -797,25 +836,59 @@ export default function LaporanKeuangan() {
   }
 
   const exportToExcel = () => {
+    if (downloadType === 'iuran') {
+      return
+    }
+
     try {
-      const ws = XLSX.utils.json_to_sheet(filteredData.map(row => ({
-        Tanggal: formatDateTime(row.tanggal),
-        Keterangan: row.keterangan,
-        Pemasukan: row.pemasukan || 0,
-        Pengeluaran: row.pengeluaran || 0,
-        Saldo: row.total_saldo || 0
-      })))
-      const colWidths = [
-        { wch: 12 },
-        { wch: 30 },
-        { wch: 15 },
-        { wch: 15 },
-        { wch: 15 }
-      ]
+      let exportData = filteredData
+      let sheetName = 'Laporan Keuangan'
+      let fileName = 'laporan-keuangan.xlsx'
+
+      if (downloadType === 'pemasukan') {
+        exportData = filteredData.filter(row => Number(row.pemasukan) > 0)
+        sheetName = 'Laporan Pemasukan'
+        fileName = 'laporan-pemasukan.xlsx'
+      } else if (downloadType === 'pengeluaran') {
+        exportData = filteredData.filter(row => Number(row.pengeluaran) > 0)
+        sheetName = 'Laporan Pengeluaran'
+        fileName = 'laporan-pengeluaran.xlsx'
+      }
+
+      const rows = exportData.map(row => {
+        if (downloadType === 'pemasukan') {
+          return {
+            Tanggal: formatDateTime(row.tanggal),
+            Keterangan: row.keterangan,
+            Pemasukan: row.pemasukan || 0,
+            Saldo: row.total_saldo || 0
+          }
+        }
+        if (downloadType === 'pengeluaran') {
+          return {
+            Tanggal: formatDateTime(row.tanggal),
+            Keterangan: row.keterangan,
+            Pengeluaran: row.pengeluaran || 0,
+            Saldo: row.total_saldo || 0
+          }
+        }
+        return {
+          Tanggal: formatDateTime(row.tanggal),
+          Keterangan: row.keterangan,
+          Pemasukan: row.pemasukan || 0,
+          Pengeluaran: row.pengeluaran || 0,
+          Saldo: row.total_saldo || 0
+        }
+      })
+
+      const ws = XLSX.utils.json_to_sheet(rows)
+      const colWidths = (downloadType === 'pemasukan' || downloadType === 'pengeluaran')
+        ? [{ wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 15 }]
+        : [{ wch: 12 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 15 }]
       ws['!cols'] = colWidths
       const wb = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(wb, ws, 'Laporan Keuangan')
-      XLSX.writeFile(wb, 'laporan-keuangan.xlsx')
+      XLSX.utils.book_append_sheet(wb, ws, sheetName)
+      XLSX.writeFile(wb, fileName)
       handleClose()
     } catch (error) {
       console.error('Error exporting Excel:', error)
@@ -829,7 +902,7 @@ export default function LaporanKeuangan() {
 
   const handleDownloadPDF = () => {
     if (pdfPreview && pdfPreview.doc) {
-      pdfPreview.doc.save('laporan-keuangan-coconut.pdf')
+      pdfPreview.doc.save(pdfPreview.filename || 'laporan-keuangan-coconut.pdf')
     }
   }
 
@@ -852,6 +925,308 @@ export default function LaporanKeuangan() {
     setPdfPreview(null)
     setShowPreview(false)
   }
+
+  // Helper: convert periode "YYYY-MM" to Indonesian month name "Januari 2026"
+  const periodeToLabel = (periode) => {
+    const bulanNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
+    if (!periode) return periode
+    const [year, month] = periode.split('-')
+    const monthIndex = parseInt(month, 10) - 1
+    return `${bulanNames[monthIndex] || month} ${year}`
+  }
+
+  const generateIuranPDF = async () => {
+    try {
+      const members = await iuranService.getAllMember()
+      if (!members || members.length === 0) {
+        setAlert({ open: true, message: 'Tidak ada data iuran untuk diunduh', severity: 'warning' })
+        return
+      }
+
+      // Collect all unique periods across all members, sorted ascending
+      const allPeriodes = new Set()
+      members.forEach(member => {
+        const iuranList = member.iuran || member.pembayaran_iuran || []
+        if (Array.isArray(iuranList)) {
+          iuranList.forEach(p => {
+            if (p.periode) allPeriodes.add(p.periode)
+          })
+        }
+      })
+      const sortedPeriodes = Array.from(allPeriodes).sort()
+
+      if (sortedPeriodes.length === 0) {
+        setAlert({ open: true, message: 'Belum ada data pembayaran iuran', severity: 'warning' })
+        return
+      }
+
+      // Filter periodes if timeRange is set and not 'all'
+      let periodesToRender = sortedPeriodes
+      if (timeRange !== 'all') {
+        const { start, end } = getDateRange(timeRange)
+        if (start && end) {
+          const filtered = sortedPeriodes.filter(p => {
+            const pStart = `${p}-01`
+            const pEnd = `${p}-31`
+            return pEnd >= start && pStart <= end
+          })
+          if (filtered.length > 0) {
+            periodesToRender = filtered
+          }
+        }
+      }
+
+      const doc = new jsPDF('p', 'mm', 'a4') // Portrait A4
+      const pageWidth = doc.internal.pageSize.width
+      const pageHeight = doc.internal.pageSize.height
+      const marginLeft = 20
+      const marginRight = 20
+      const marginBottom = 20
+
+      // Load logo
+      let logoData = null
+      try {
+        logoData = await loadImageAsBase64('/logo.png')
+      } catch (error) {
+        console.log('Could not load logo, using fallback')
+      }
+
+      const createHeader = () => {
+        const logoHeight = 20
+        let logoWidth = logoHeight
+        let logoX = marginLeft
+        let logoY = 15
+        
+        if (logoData) {
+          logoWidth = logoHeight * logoData.aspectRatio
+          const maxLogoWidth = 25
+          if (logoWidth > maxLogoWidth) {
+            logoWidth = maxLogoWidth
+            logoHeight = logoWidth / logoData.aspectRatio
+          }
+        }
+        
+        if (logoData) {
+          doc.addImage(logoData.base64, 'PNG', logoX, logoY, logoWidth, logoHeight)
+        } else {
+          const fallbackSize = Math.min(logoWidth, logoHeight)
+          doc.setDrawColor(41, 121, 255)
+          doc.setFillColor(41, 121, 255)
+          doc.circle(logoX + fallbackSize/2, logoY + fallbackSize/2, fallbackSize/2, 'F')
+          doc.setTextColor(255, 255, 255)
+          doc.setFontSize(10)
+          doc.setFont('times', 'bold')
+          doc.text('C', logoX + fallbackSize/2, logoY + fallbackSize/2 + 2, { align: 'center' })
+        }
+
+        const centerX = pageWidth / 2
+        const textY = logoY + 5
+        
+        doc.setTextColor(0, 0, 0)
+        doc.setFontSize(9)
+        doc.setFont('times', 'bold')
+        doc.text('COMPUTER CLUB ORIENTED NETWORK, UTILITY AND TECHNOLOGY', centerX, textY, { align: 'center' })
+        
+        doc.setFontSize(10)
+        doc.setFont('times', 'bold')
+        doc.text('(COCONUT)', centerX, textY + 6, { align: 'center' })
+        
+        doc.setFontSize(8)
+        doc.setFont('times', 'normal')
+        doc.text('Sekretariat: Jl. Monumen Emmy Saelan III No. 70 Karuntung, Kec. Rappocini, Makassar', centerX, textY + 11, { align: 'center' })
+        
+        const contactY = textY + 16
+        const contactText = 'Telp. 085240791254/089580126297, Website: '
+        const websiteText = 'www.coconut.or.id'
+        const emailText = ' , Email: hello@coconut.or.id'
+
+        const contactWidth = doc.getTextWidth(contactText)
+        const websiteWidth = doc.getTextWidth(websiteText)
+        const emailWidth = doc.getTextWidth(emailText)
+        const totalWidth = contactWidth + websiteWidth + emailWidth
+        
+        const startX = centerX - (totalWidth / 2)
+        
+        doc.setTextColor(0, 0, 0)
+        doc.text(contactText, startX, contactY)
+        doc.setTextColor(0, 0, 255)
+        doc.text(websiteText, startX + contactWidth, contactY)
+        doc.setTextColor(0, 0, 0)
+        doc.text(emailText, startX + contactWidth + websiteWidth, contactY)
+
+        const headerEndY = logoY + Math.max(logoHeight, 19) + 4
+        doc.setDrawColor(100, 100, 100)
+        doc.setLineWidth(0.1)
+        doc.line(marginLeft, headerEndY, pageWidth - marginRight, headerEndY)
+        
+        doc.setDrawColor(0, 0, 0)
+        doc.setLineWidth(0.4)
+        doc.line(marginLeft, headerEndY + 0.9, pageWidth - marginRight, headerEndY + 0.9)
+
+        doc.setDrawColor(100, 100, 100)
+        doc.setLineWidth(0.1)
+        doc.line(marginLeft, headerEndY + 1.9, pageWidth - marginRight, headerEndY + 1.9)
+
+        return headerEndY + 8
+      }
+
+      const createFooter = () => {
+        const footerY = pageHeight - 15
+        doc.setFontSize(6)
+        doc.setFont('times', 'normal')
+        doc.setTextColor(100, 100, 100)
+        doc.text('Dibuat oleh Sistem Keuangan Organisasi COCONUT Computer Club', marginLeft, footerY)
+      }
+
+      const addPageNumbers = () => {
+        const totalPages = doc.internal.getNumberOfPages()
+        for (let i = 1; i <= totalPages; i++) {
+          doc.setPage(i)
+          const footerY = pageHeight - 15
+          doc.setFontSize(6)
+          doc.setFont('times', 'normal')
+          doc.setTextColor(100, 100, 100)
+          const str = `Halaman ${i} dari ${totalPages}`
+          doc.text(str, pageWidth - marginRight, footerY, { align: 'right' })
+        }
+      }
+
+      let currentY = createHeader()
+      currentY += 5
+
+      doc.setFontSize(10)
+      doc.setFont('times', 'bold')
+      doc.setTextColor(0, 0, 0)
+      doc.text('LAPORAN IURAN ANGGOTA', pageWidth / 2, currentY, { align: 'center' })
+      currentY += 6
+
+      const periodSubtitle = periodesToRender.length === 1
+        ? `Periode: ${periodeToLabel(periodesToRender[0])}`
+        : `Periode: ${periodeToLabel(periodesToRender[0])} - ${periodeToLabel(periodesToRender[periodesToRender.length - 1])}`
+
+      doc.setFontSize(8)
+      doc.setFont('times', 'normal')
+      doc.text(periodSubtitle, pageWidth / 2, currentY, { align: 'center' })
+      currentY += 8
+
+      // Filter active members and sort by NRA
+      let activeMembers = members.filter(m => {
+        const s = (m.status || '').toLowerCase()
+        return s !== 'nonaktif' && s !== 'inactive'
+      })
+      if (activeMembers.length === 0) {
+        activeMembers = members
+      }
+      activeMembers.sort((a, b) => (a.nra || '').localeCompare(b.nra || '', undefined, { numeric: true }))
+
+      // Generate a stacked table for each period (month)
+      periodesToRender.forEach((periode, pIdx) => {
+        // Check if there is enough space on page for table header + at least 2 rows
+        if (currentY + 35 > pageHeight - marginBottom) {
+          doc.addPage()
+          currentY = createHeader() + 5
+        }
+
+        const tableHead = [
+          [
+            { content: 'NRA', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
+            { content: 'Nama', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
+            { content: periodeToLabel(periode), colSpan: 4, styles: { valign: 'middle', halign: 'center' } }
+          ],
+          [
+            { content: '1', styles: { valign: 'middle', halign: 'center' } },
+            { content: '2', styles: { valign: 'middle', halign: 'center' } },
+            { content: '3', styles: { valign: 'middle', halign: 'center' } },
+            { content: '4', styles: { valign: 'middle', halign: 'center' } }
+          ]
+        ]
+
+        const tableBody = activeMembers.map(member => {
+          const row = [member.nra || '-', member.nama || '-']
+          const iuranList = member.iuran || member.pembayaran_iuran || []
+          for (let w = 1; w <= 4; w++) {
+            const payment = Array.isArray(iuranList) ? iuranList.find(
+              p => p.periode === periode && Number(p.minggu_ke) === w
+            ) : null
+            // Hanya tampilkan jumlah bayar jika sudah lunas (bukan cicilan / belum)
+            if (payment && payment.status && payment.status.toLowerCase() === 'lunas' && payment.jumlah_bayar) {
+              row.push(String(payment.jumlah_bayar))
+            } else {
+              row.push('')
+            }
+          }
+          return row
+        })
+
+        autoTable(doc, {
+          startY: currentY,
+          head: tableHead,
+          body: tableBody,
+          styles: {
+            font: 'times',
+            fontSize: 8.5,
+            cellPadding: 2.5,
+            lineColor: [0, 0, 0],
+            lineWidth: 0.2,
+            textColor: [0, 0, 0],
+          },
+          headStyles: {
+            fillColor: [0, 229, 255], // Bright cyan header
+            textColor: [0, 0, 0], // Black text
+            fontStyle: 'bold',
+            halign: 'center',
+            valign: 'middle',
+            fontSize: 8.5,
+            lineColor: [0, 0, 0],
+            lineWidth: 0.2,
+          },
+          bodyStyles: {
+            fillColor: [255, 255, 255],
+            textColor: [0, 0, 0],
+            valign: 'middle',
+            fontSize: 8.5,
+            lineColor: [0, 0, 0],
+            lineWidth: 0.2,
+          },
+          alternateRowStyles: {
+            fillColor: [255, 255, 255],
+          },
+          columnStyles: {
+            0: { cellWidth: 30, halign: 'center' },
+            1: { cellWidth: 60, halign: 'left' },
+            2: { cellWidth: 20, halign: 'center' },
+            3: { cellWidth: 20, halign: 'center' },
+            4: { cellWidth: 20, halign: 'center' },
+            5: { cellWidth: 20, halign: 'center' },
+          },
+          margin: { left: marginLeft, right: marginRight, bottom: marginBottom, top: 55 },
+          theme: 'grid',
+          tableWidth: 170,
+          didDrawPage: (data) => {
+            if (data.pageNumber > 1) {
+              createHeader()
+            }
+            createFooter()
+          }
+        })
+
+        currentY = doc.lastAutoTable.finalY + 8
+      })
+
+      createFooter()
+      addPageNumbers()
+
+      const pdfBlob = doc.output('blob')
+      const pdfUrl = URL.createObjectURL(pdfBlob)
+      setPdfPreview({ url: pdfUrl, doc: doc, filename: 'laporan-iuran-coconut.pdf' })
+      setShowPreview(true)
+      handleClose()
+    } catch (error) {
+      console.error('Error generating Iuran PDF:', error)
+      setAlert({ open: true, message: 'Terjadi kesalahan saat membuat laporan iuran', severity: 'error' })
+    }
+  }
+
 
   const timeRangeOptions = [
     { value: 'today', label: 'Hari Ini' },
@@ -1130,6 +1505,114 @@ export default function LaporanKeuangan() {
                 </Select>
               </StyledFormControl>
               
+              <StyledFormControl 
+                variant="outlined" 
+                size="large" 
+                sx={{ 
+                  minWidth: { xs: '100%', sm: '200px' },
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: '16px',
+                    background: isDarkMode 
+                      ? 'rgba(100, 181, 246, 0.1)' 
+                      : 'rgba(255, 255, 255, 0.9)',
+                    backdropFilter: 'blur(10px)',
+                    border: isDarkMode 
+                      ? '1px solid rgba(144, 202, 249, 0.3)' 
+                      : '1px solid rgba(25, 118, 210, 0.2)',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                      border: isDarkMode 
+                        ? '1px solid rgba(144, 202, 249, 0.5)' 
+                        : '1px solid rgba(25, 118, 210, 0.4)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: isDarkMode 
+                        ? '0 8px 25px rgba(100, 181, 246, 0.2)' 
+                        : '0 8px 25px rgba(25, 118, 210, 0.15)',
+                    }
+                  }
+                }}
+              >
+                <InputLabel sx={{ 
+                  color: isDarkMode ? '#90caf9' : '#1976d2',
+                  fontWeight: 600,
+                }}>
+                  Pilih Laporan
+                </InputLabel>
+                <Select
+                  value={downloadType}
+                  onChange={(e) => setDownloadType(e.target.value)}
+                  label="Pilih Laporan"
+                  sx={{
+                    color: isDarkMode ? '#fff' : '#1976d2',
+                    fontWeight: 500,
+                    '& .MuiSelect-icon': {
+                      color: isDarkMode ? '#90caf9' : '#1976d2',
+                    },
+                  }}
+                >
+                  <MenuItem 
+                    value="keseluruhan" 
+                    sx={{ 
+                      py: 1.5, 
+                      px: 2,
+                      background: isDarkMode ? '#1e1e1e' : '#fff',
+                      '&:hover': {
+                        background: isDarkMode 
+                          ? 'rgba(100, 181, 246, 0.1)' 
+                          : 'rgba(25, 118, 210, 0.05)',
+                      }
+                    }}
+                  >
+                    Keseluruhan
+                  </MenuItem>
+                  <MenuItem 
+                    value="pemasukan" 
+                    sx={{ 
+                      py: 1.5, 
+                      px: 2,
+                      background: isDarkMode ? '#1e1e1e' : '#fff',
+                      '&:hover': {
+                        background: isDarkMode 
+                          ? 'rgba(100, 181, 246, 0.1)' 
+                          : 'rgba(25, 118, 210, 0.05)',
+                      }
+                    }}
+                  >
+                    Pemasukan
+                  </MenuItem>
+                  <MenuItem 
+                    value="pengeluaran" 
+                    sx={{ 
+                      py: 1.5, 
+                      px: 2,
+                      background: isDarkMode ? '#1e1e1e' : '#fff',
+                      '&:hover': {
+                        background: isDarkMode 
+                          ? 'rgba(100, 181, 246, 0.1)' 
+                          : 'rgba(25, 118, 210, 0.05)',
+                      }
+                    }}
+                  >
+                    Pengeluaran
+                  </MenuItem>
+                  <MenuItem 
+                    value="iuran" 
+                    sx={{ 
+                      py: 1.5, 
+                      px: 2,
+                      background: isDarkMode ? '#1e1e1e' : '#fff',
+                      '&:hover': {
+                        background: isDarkMode 
+                          ? 'rgba(100, 181, 246, 0.1)' 
+                          : 'rgba(25, 118, 210, 0.05)',
+                      }
+                    }}
+                  >
+                    Iuran
+                  </MenuItem>
+                </Select>
+              </StyledFormControl>
+              
               <Button
                 variant="outlined"
                 onClick={() => fetchDataByRange(timeRange)}
@@ -1162,7 +1645,13 @@ export default function LaporanKeuangan() {
               
               <Button 
                 variant="contained" 
-                onClick={handleClick} 
+                onClick={(e) => {
+                  if (downloadType === 'iuran') {
+                    generateIuranPDF()
+                  } else {
+                    handleClick(e)
+                  }
+                }} 
                 sx={{ 
                   minWidth: { xs: '100%', sm: '180px' }, 
                   height: '56px',
@@ -1208,6 +1697,7 @@ export default function LaporanKeuangan() {
             handleClose={handleClose}
             generatePDF={generatePDF}
             exportToExcel={exportToExcel}
+            downloadType={downloadType}
           />
 
           {/* Tabel Desktop */}
@@ -1251,7 +1741,7 @@ export default function LaporanKeuangan() {
           borderBottom: '1px solid #e0e0e0'
         }}>
           <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-            Preview Laporan Keuangan
+            Preview {downloadType === 'iuran' ? 'Laporan Iuran Anggota' : downloadType === 'pemasukan' ? 'Laporan Pemasukan' : downloadType === 'pengeluaran' ? 'Laporan Pengeluaran' : 'Laporan Keuangan'}
           </Typography>
           <IconButton onClick={handleClosePreview}>
             <CloseIcon />

@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import {
   Dialog,
   DialogTitle,
@@ -14,32 +13,83 @@ import {
   Box,
   useTheme
 } from '@mui/material'
-import { Add as AddIcon, Edit as EditIcon, Receipt as ReceiptIcon } from '@mui/icons-material'
+import ReceiptIcon from '@mui/icons-material/Receipt'
+import { Add as AddIcon, Edit as EditIcon, Save as SaveIcon } from '@mui/icons-material'
+import { useState, useEffect } from 'react'
 
 export default function PengeluaranFormDialog({
   showModal,
   setShowModal,
   editingId,
   formData,
+  setFormData,
   handleInputChange,
   handleNominalBlur,
   handleSave,
-  loading,
-  previewUrl,
-  setPreviewUrl
+  loading
 }) {
   const theme = useTheme()
   const isDarkMode = theme.palette.mode === 'dark'
-  
-  const handleClose = () => {
-    setShowModal(false)
-    setPreviewUrl('')
+  const [previewUrl, setPreviewUrl] = useState('')
+
+  // Set default date to current date when opening for new entry
+  useEffect(() => {
+    if (showModal && !editingId && !formData.tanggal) {
+      const now = new Date()
+      // Format to date input format (YYYY-MM-DD)
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day = String(now.getDate()).padStart(2, '0')
+      const formatted = `${year}-${month}-${day}`
+      setFormData(prev => ({ ...prev, tanggal: formatted }))
+    }
+  }, [showModal, editingId, formData.tanggal, setFormData])
+
+  // Update preview URL when a new file is selected or existing nota string is passed
+  useEffect(() => {
+    if (formData.nota instanceof File) {
+      const url = URL.createObjectURL(formData.nota)
+      setPreviewUrl(url)
+      return () => URL.revokeObjectURL(url)
+    } else if (formData.nota && typeof formData.nota === 'string') {
+      if (formData.nota.startsWith('http://') || formData.nota.startsWith('https://')) {
+        setPreviewUrl(formData.nota)
+      } else {
+        const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'
+        const baseUrl = process.env.NEXT_PUBLIC_UPLOAD_URL || `${apiBase}/api/uploads/`
+        const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`
+        let cleanPath = formData.nota.replace(/^\/+/, '')
+        cleanPath = cleanPath.replace(/^api\/uploads\//, '')
+        cleanPath = cleanPath.replace(/^uploads\//, '')
+        setPreviewUrl(`${cleanBaseUrl}${cleanPath}`)
+      }
+    } else {
+      setPreviewUrl('')
+    }
+  }, [formData.nota])
+
+  // Handle file input change
+  const handleFileChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // Max 5MB
+        alert('Ukuran file terlalu besar (maksimal 5MB)')
+        return
+      }
+      if (!['image/jpeg', 'image/png', 'image/jpg'].includes(file.type)) {
+        alert('Format file tidak didukung (hanya JPG, PNG, JPEG)')
+        return
+      }
+      setFormData(prev => ({ ...prev, nota: file }))
+    } else {
+      setFormData(prev => ({ ...prev, nota: null }))
+    }
   }
 
   return (
     <Dialog
       open={showModal}
-      onClose={handleClose}
+      onClose={() => setShowModal(false)}
       maxWidth="sm"
       fullWidth
       PaperProps={{
@@ -75,9 +125,8 @@ export default function PengeluaranFormDialog({
           }
         }
       }}
-      aria-labelledby="pengeluaran-dialog-title"
     >
-      <DialogTitle id="pengeluaran-dialog-title" sx={{
+      <DialogTitle sx={{
         pb: 2,
         pt: 3,
         px: 3,
@@ -88,12 +137,12 @@ export default function PengeluaranFormDialog({
           ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(229, 57, 53, 0.4) 50%, rgba(239, 83, 80, 0.3) 100%)'
           : 'linear-gradient(135deg, rgba(244, 67, 54, 0.1) 0%, rgba(229, 57, 53, 0.15) 50%, rgba(239, 83, 80, 0.1) 100%)',
         backdropFilter: 'blur(10px)',
-        color: isDarkMode ? '#e57373' : '#c62828',
+        color: isDarkMode ? '#ef9a9a' : '#c62828',
         display: 'flex',
         alignItems: 'center',
         gap: 1,
         textShadow: isDarkMode 
-          ? '0 2px 10px rgba(229, 115, 115, 0.3)' 
+          ? '0 2px 10px rgba(239, 154, 154, 0.3)' 
           : '0 2px 10px rgba(198, 40, 40, 0.2)',
         '& .MuiTypography-root': {
           fontSize: '1.5rem',
@@ -113,155 +162,102 @@ export default function PengeluaranFormDialog({
           </>
         )}
       </DialogTitle>
-
-      <DialogContent
-        sx={{
-          py: 4,
-          px: { xs: 3, sm: 4 },
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 3,
-          overflowY: 'auto',
-          background: isDarkMode
-            ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.05) 100%)'
-            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.8) 100%)',
-          backdropFilter: 'blur(20px)',
-          border: isDarkMode 
-            ? '1px solid rgba(255, 255, 255, 0.08)'
-            : '1px solid rgba(255, 255, 255, 0.3)',
-          borderTop: 'none',
-          '&::-webkit-scrollbar': {
-            width: '8px',
+      <DialogContent sx={{
+        py: 4,
+        px: { xs: 3, sm: 4 },
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 3,
+        overflowY: 'auto',
+        '&::-webkit-scrollbar': {
+          width: '8px',
+        },
+        '&::-webkit-scrollbar-track': {
+          background: '#f1f1f1',
+          borderRadius: '4px',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          background: '#888',
+          borderRadius: '4px',
+          '&:hover': {
+            background: '#666',
           },
-          '&::-webkit-scrollbar-track': {
-            background: isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-            borderRadius: '4px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            background: isDarkMode ? 'rgba(229, 115, 115, 0.4)' : 'rgba(198, 40, 40, 0.3)',
-            borderRadius: '4px',
-            '&:hover': {
-              background: isDarkMode ? 'rgba(229, 115, 115, 0.6)' : 'rgba(198, 40, 40, 0.5)',
-            },
-          },
-        }}
-      >
-        <Box sx={{ 
-          mb: 3,
-          p: 3,
-          background: isDarkMode
-            ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.08) 0%, rgba(229, 57, 53, 0.12) 100%)'
-            : 'linear-gradient(135deg, rgba(244, 67, 54, 0.03) 0%, rgba(229, 57, 53, 0.05) 100%)',
-          backdropFilter: 'blur(10px)',
-          border: isDarkMode 
-            ? '1px solid rgba(229, 115, 115, 0.2)'
-            : '1px solid rgba(198, 40, 40, 0.1)',
-          borderRadius: '16px',
-          boxShadow: isDarkMode 
-            ? '0 8px 32px rgba(229, 115, 115, 0.1)'
-            : '0 8px 32px rgba(198, 40, 40, 0.05)'
-        }}>
+        },
+      }}>
+        <Box sx={{ mb: 2 }}>
           <Typography variant="subtitle1" sx={{ 
-            mb: 2, 
-            fontWeight: 600, 
-            color: isDarkMode ? '#e57373' : '#c62828',
-            textShadow: isDarkMode 
-              ? '0 2px 8px rgba(229, 115, 115, 0.3)' 
-              : '0 2px 8px rgba(198, 40, 40, 0.2)',
-            letterSpacing: '0.5px'
+            mb: 1, 
+            fontWeight: 500, 
+            color: isDarkMode ? '#ef9a9a' : '#c62828'
           }}>
             Informasi Pengeluaran
           </Typography>
           <Divider sx={{
-            borderColor: isDarkMode ? 'rgba(229, 115, 115, 0.3)' : 'rgba(198, 40, 40, 0.2)',
-            boxShadow: isDarkMode 
-              ? '0 1px 3px rgba(229, 115, 115, 0.2)' 
-              : '0 1px 3px rgba(198, 40, 40, 0.1)'
+            borderColor: isDarkMode ? 'rgba(239, 154, 154, 0.2)' : 'rgba(198, 40, 40, 0.2)'
           }} />
         </Box>
-
         <TextField
-          label="Tanggal dan Waktu"
+          label="Tanggal"
           name="tanggal"
-          type="datetime-local"
-          value={formData.tanggal}
+          type="date"
+          value={formData.tanggal || ''}
           onChange={handleInputChange}
           fullWidth
           required
-          InputLabelProps={{
+          InputLabelProps={{ 
             shrink: true,
             style: { 
               fontWeight: 500, 
-              color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-              fontSize: '0.9rem'
+              color: isDarkMode ? '#ef9a9a' : '#c62828'
             }
           }}
           sx={{
-            mb: 3,
-            '& .MuiInputLabel-root': {
-              '&.Mui-focused': {
-                color: isDarkMode ? '#e57373' : '#c62828',
-                textShadow: isDarkMode 
-                  ? '0 0 10px rgba(229, 115, 115, 0.3)' 
-                  : '0 0 8px rgba(198, 40, 40, 0.2)'
-              }
-            },
             '& .MuiOutlinedInput-root': {
+              borderRadius: '12px',
               background: isDarkMode
-                ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.08) 100%)'
-                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.7) 100%)',
+                ? 'rgba(255, 255, 255, 0.05)'
+                : 'rgba(255, 255, 255, 0.8)',
               backdropFilter: 'blur(10px)',
               border: isDarkMode 
-                ? '1px solid rgba(255, 255, 255, 0.1)'
-                : '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '12px',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '& .MuiOutlinedInput-notchedOutline': {
+                ? '1px solid rgba(239, 154, 154, 0.2)'
+                : '1px solid rgba(198, 40, 40, 0.2)',
+              '& fieldset': {
                 border: 'none'
               },
               '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: isDarkMode
-                  ? '0 8px 25px rgba(229, 115, 115, 0.15)'
-                  : '0 8px 25px rgba(198, 40, 40, 0.1)',
                 background: isDarkMode
-                  ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.12) 100%)'
-                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%)',
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(255, 255, 255, 0.9)',
                 border: isDarkMode 
-                  ? '1px solid rgba(229, 115, 115, 0.3)'
-                  : '1px solid rgba(198, 40, 40, 0.2)'
+                  ? '1px solid rgba(239, 154, 154, 0.3)'
+                  : '1px solid rgba(198, 40, 40, 0.3)',
               },
               '&.Mui-focused': {
-                transform: 'translateY(-2px)',
-                boxShadow: isDarkMode
-                  ? '0 12px 35px rgba(229, 115, 115, 0.25)'
-                  : '0 12px 35px rgba(198, 40, 40, 0.15)',
                 background: isDarkMode
-                  ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.15) 100%)'
-                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.9) 100%)',
+                  ? 'rgba(255, 255, 255, 0.1)'
+                  : 'rgba(255, 255, 255, 1)',
                 border: isDarkMode 
-                  ? '2px solid rgba(229, 115, 115, 0.5)'
-                  : '2px solid rgba(198, 40, 40, 0.3)'
-              },
-              '& input': {
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.87)',
-                fontSize: '0.95rem',
-                fontWeight: 500
-              },
-              '& input[type="datetime-local"]': {
-                fontSize: '1rem',
-                padding: '16.5px 14px',
-                colorScheme: isDarkMode ? 'dark' : 'light'
+                  ? '2px solid rgba(239, 154, 154, 0.5)'
+                  : '2px solid rgba(198, 40, 40, 0.5)',
+                boxShadow: isDarkMode
+                  ? '0 0 0 2px rgba(239, 154, 154, 0.2)'
+                  : '0 0 0 2px rgba(198, 40, 40, 0.1)'
               }
+            },
+            '& .MuiOutlinedInput-input': {
+              color: isDarkMode ? '#ffffff' : '#212121'
+            },
+            '& input[type="date"]': {
+              fontSize: '1rem',
+              padding: '16.5px 14px',
+              colorScheme: isDarkMode ? 'dark' : 'light'
             }
           }}
           inputProps={{ 
-            'aria-label': 'Tanggal dan waktu pengeluaran',
-            step: '60' // Set step to 1 minute intervals
+            'aria-label': 'Tanggal pengeluaran'
           }}
-          helperText="Pilih tanggal dan waktu pengeluaran"
+          helperText="Pilih tanggal pengeluaran"
         />
-
         <TextField
           label="Jumlah"
           name="nominal"
@@ -271,82 +267,64 @@ export default function PengeluaranFormDialog({
           onBlur={handleNominalBlur}
           fullWidth
           required
-          inputProps={{
-            maxLength: 11,
-            pattern: '[0-9]*'
-          }}
           InputProps={{
             startAdornment: (
-              <Typography sx={{
-                mr: 1,
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-                fontWeight: 500
+              <Typography sx={{ 
+                mr: 1, 
+                color: isDarkMode ? '#b0bec5' : '#666', 
+                fontWeight: 500 
               }}>
                 Rp
               </Typography>
             )
           }}
+          InputLabelProps={{
+            style: { 
+              color: isDarkMode ? '#ef9a9a' : '#c62828',
+              fontWeight: 500
+            }
+          }}
           sx={{
-            mb: 3,
-            '& .MuiInputLabel-root': {
-              color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-              fontSize: '0.9rem',
-              fontWeight: 500,
-              '&.Mui-focused': {
-                color: isDarkMode ? '#e57373' : '#c62828',
-                textShadow: isDarkMode 
-                  ? '0 0 10px rgba(229, 115, 115, 0.3)' 
-                  : '0 0 8px rgba(198, 40, 40, 0.2)'
-              }
-            },
             '& .MuiOutlinedInput-root': {
+              borderRadius: '12px',
               background: isDarkMode
-                ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.08) 100%)'
-                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.7) 100%)',
+                ? 'rgba(255, 255, 255, 0.05)'
+                : 'rgba(255, 255, 255, 0.8)',
               backdropFilter: 'blur(10px)',
               border: isDarkMode 
-                ? '1px solid rgba(255, 255, 255, 0.1)'
-                : '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '12px',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '& .MuiOutlinedInput-notchedOutline': {
+                ? '1px solid rgba(239, 154, 154, 0.2)'
+                : '1px solid rgba(198, 40, 40, 0.2)',
+              '& fieldset': {
                 border: 'none'
               },
               '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: isDarkMode
-                  ? '0 8px 25px rgba(229, 115, 115, 0.15)'
-                  : '0 8px 25px rgba(198, 40, 40, 0.1)',
                 background: isDarkMode
-                  ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.12) 100%)'
-                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%)',
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(255, 255, 255, 0.9)',
                 border: isDarkMode 
-                  ? '1px solid rgba(229, 115, 115, 0.3)'
-                  : '1px solid rgba(198, 40, 40, 0.2)'
+                  ? '1px solid rgba(239, 154, 154, 0.3)'
+                  : '1px solid rgba(198, 40, 40, 0.3)',
               },
               '&.Mui-focused': {
-                transform: 'translateY(-2px)',
-                boxShadow: isDarkMode
-                  ? '0 12px 35px rgba(229, 115, 115, 0.25)'
-                  : '0 12px 35px rgba(198, 40, 40, 0.15)',
                 background: isDarkMode
-                  ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.15) 100%)'
-                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.9) 100%)',
+                  ? 'rgba(255, 255, 255, 0.1)'
+                  : 'rgba(255, 255, 255, 1)',
                 border: isDarkMode 
-                  ? '2px solid rgba(229, 115, 115, 0.5)'
-                  : '2px solid rgba(198, 40, 40, 0.3)'
-              },
-              '& input': {
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.87)',
-                fontSize: '0.95rem',
-                fontWeight: 500
+                  ? '2px solid rgba(239, 154, 154, 0.5)'
+                  : '2px solid rgba(198, 40, 40, 0.5)',
+                boxShadow: isDarkMode
+                  ? '0 0 0 2px rgba(239, 154, 154, 0.2)'
+                  : '0 0 0 2px rgba(198, 40, 40, 0.1)'
               }
+            },
+            '& .MuiOutlinedInput-input': {
+              color: isDarkMode ? '#ffffff' : '#212121'
             }
           }}
           placeholder="Contoh: 1.000.000"
           helperText="Nominal minimal Rp. 1.000"
+          inputProps={{ 'aria-label': 'Jumlah pengeluaran' }}
         />
-
         <TextField
           label="Keterangan"
           name="keterangan"
@@ -357,124 +335,92 @@ export default function PengeluaranFormDialog({
           multiline
           rows={4}
           placeholder="Masukkan detail keterangan pengeluaran"
+          InputLabelProps={{
+            style: { 
+              color: isDarkMode ? '#ef9a9a' : '#c62828',
+              fontWeight: 500
+            }
+          }}
           sx={{
-            mb: 3,
-            '& .MuiInputLabel-root': {
-              color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-              fontSize: '0.9rem',
-              fontWeight: 500,
-              '&.Mui-focused': {
-                color: isDarkMode ? '#e57373' : '#c62828',
-                textShadow: isDarkMode 
-                  ? '0 0 10px rgba(229, 115, 115, 0.3)' 
-                  : '0 0 8px rgba(198, 40, 40, 0.2)'
-              }
-            },
             '& .MuiOutlinedInput-root': {
+              borderRadius: '12px',
               background: isDarkMode
-                ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.08) 100%)'
-                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.7) 100%)',
+                ? 'rgba(255, 255, 255, 0.05)'
+                : 'rgba(255, 255, 255, 0.8)',
               backdropFilter: 'blur(10px)',
               border: isDarkMode 
-                ? '1px solid rgba(255, 255, 255, 0.1)'
-                : '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '12px',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '& .MuiOutlinedInput-notchedOutline': {
+                ? '1px solid rgba(239, 154, 154, 0.2)'
+                : '1px solid rgba(198, 40, 40, 0.2)',
+              '& fieldset': {
                 border: 'none'
               },
               '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: isDarkMode
-                  ? '0 8px 25px rgba(229, 115, 115, 0.15)'
-                  : '0 8px 25px rgba(198, 40, 40, 0.1)',
                 background: isDarkMode
-                  ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.12) 100%)'
-                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%)',
+                  ? 'rgba(255, 255, 255, 0.08)'
+                  : 'rgba(255, 255, 255, 0.9)',
                 border: isDarkMode 
-                  ? '1px solid rgba(229, 115, 115, 0.3)'
-                  : '1px solid rgba(198, 40, 40, 0.2)'
+                  ? '1px solid rgba(239, 154, 154, 0.3)'
+                  : '1px solid rgba(198, 40, 40, 0.3)',
               },
               '&.Mui-focused': {
-                transform: 'translateY(-2px)',
-                boxShadow: isDarkMode
-                  ? '0 12px 35px rgba(229, 115, 115, 0.25)'
-                  : '0 12px 35px rgba(198, 40, 40, 0.15)',
                 background: isDarkMode
-                  ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.15) 100%)'
-                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.9) 100%)',
+                  ? 'rgba(255, 255, 255, 0.1)'
+                  : 'rgba(255, 255, 255, 1)',
                 border: isDarkMode 
-                  ? '2px solid rgba(229, 115, 115, 0.5)'
-                  : '2px solid rgba(198, 40, 40, 0.3)'
-              },
-              '& textarea': {
-                color: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.87)',
-                fontSize: '0.95rem',
-                fontWeight: 500,
-                '&::placeholder': {
-                  color: isDarkMode ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)',
-                  opacity: 1
-                }
+                  ? '2px solid rgba(239, 154, 154, 0.5)'
+                  : '2px solid rgba(198, 40, 40, 0.5)',
+                boxShadow: isDarkMode
+                  ? '0 0 0 2px rgba(239, 154, 154, 0.2)'
+                  : '0 0 0 2px rgba(198, 40, 40, 0.1)'
               }
+            },
+            '& .MuiOutlinedInput-input': {
+              color: isDarkMode ? '#ffffff' : '#212121'
             }
           }}
+          inputProps={{ 'aria-label': 'Keterangan pengeluaran' }}
         />
-
-        <Box sx={{ 
-          mb: 3,
-          p: 3,
-          background: isDarkMode
-            ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.08) 0%, rgba(229, 57, 53, 0.12) 100%)'
-            : 'linear-gradient(135deg, rgba(244, 67, 54, 0.03) 0%, rgba(229, 57, 53, 0.05) 100%)',
-          backdropFilter: 'blur(10px)',
-          border: isDarkMode 
-            ? '1px solid rgba(229, 115, 115, 0.2)'
-            : '1px solid rgba(198, 40, 40, 0.1)',
-          borderRadius: '16px',
-          boxShadow: isDarkMode 
-            ? '0 8px 32px rgba(229, 115, 115, 0.1)'
-            : '0 8px 32px rgba(198, 40, 40, 0.05)'
-        }}>
+        <Box sx={{ mb: 1 }}>
           <Typography
             variant="subtitle1"
             sx={{
               mb: 2,
-              fontWeight: 600,
-              color: isDarkMode ? '#e57373' : '#c62828',
-              textShadow: isDarkMode 
-                ? '0 2px 8px rgba(229, 115, 115, 0.3)' 
-                : '0 2px 8px rgba(198, 40, 40, 0.2)',
-              letterSpacing: '0.5px',
+              fontWeight: 500,
+              color: isDarkMode ? '#ef9a9a' : '#c62828',
               display: 'flex',
               alignItems: 'center',
-              gap: 1
+              gap: 0.5
             }}
           >
-            <ReceiptIcon sx={{ fontSize: 24 }} />
-            Upload Nota {editingId ? '(Opsional)' : '*'}
+            <ReceiptIcon sx={{ fontSize: 20 }} />
+            Upload Nota (Opsional)
           </Typography>
           <Box
             sx={{
               border: '2px dashed',
-              borderColor: isDarkMode ? 'rgba(229, 115, 115, 0.4)' : 'rgba(198, 40, 40, 0.3)',
-              background: isDarkMode
-                ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.05) 100%)'
-                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0.7) 100%)',
-              backdropFilter: 'blur(10px)',
+              borderColor: isDarkMode 
+                ? 'rgba(239, 154, 154, 0.3)' 
+                : 'rgba(198, 40, 40, 0.3)',
               borderRadius: '12px',
               p: 4,
               textAlign: 'center',
               cursor: 'pointer',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'all 0.3s ease',
+              background: isDarkMode
+                ? 'rgba(255, 255, 255, 0.02)'
+                : 'rgba(255, 255, 255, 0.5)',
+              backdropFilter: 'blur(10px)',
               '&:hover': {
-                borderColor: isDarkMode ? 'rgba(229, 115, 115, 0.6)' : 'rgba(198, 40, 40, 0.5)',
+                borderColor: isDarkMode 
+                  ? 'rgba(239, 154, 154, 0.5)' 
+                  : 'rgba(198, 40, 40, 0.5)',
                 background: isDarkMode
-                  ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.08) 100%)'
-                  : 'linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.8) 100%)',
+                  ? 'rgba(239, 154, 154, 0.05)'
+                  : 'rgba(198, 40, 40, 0.04)',
                 transform: 'translateY(-2px)',
                 boxShadow: isDarkMode
-                  ? '0 8px 25px rgba(229, 115, 115, 0.2)'
-                  : '0 8px 25px rgba(198, 40, 40, 0.15)'
+                  ? '0 4px 16px rgba(239, 154, 154, 0.1)'
+                  : '0 4px 16px rgba(198, 40, 40, 0.1)'
               }
             }}
           >
@@ -482,24 +428,27 @@ export default function PengeluaranFormDialog({
               accept="image/*"
               type="file"
               name="nota"
-              onChange={handleInputChange}
+              onChange={handleFileChange}
               style={{ display: 'none' }}
-              id="nota-upload"
+              id="nota-upload-pengeluaran"
               aria-label="Upload nota pengeluaran"
             />
-            <label htmlFor="nota-upload" style={{ cursor: 'pointer' }}>
+            <label htmlFor="nota-upload-pengeluaran" style={{ cursor: 'pointer' }}>
               {previewUrl ? (
                 <Box sx={{ position: 'relative' }}>
-                  <Image
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={previewUrl}
                     alt="Preview Nota"
-                    width={300}
-                    height={200}
                     style={{
                       maxWidth: '100%',
                       maxHeight: '200px',
                       borderRadius: '8px',
                       objectFit: 'contain'
+                    }}
+                    onError={(e) => {
+                      console.error('Error loading image:', e)
+                      e.target.style.display = 'none'
                     }}
                   />
                   <Typography
@@ -507,8 +456,7 @@ export default function PengeluaranFormDialog({
                     sx={{
                       display: 'block',
                       mt: 2,
-                      color: isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
-                      fontWeight: 500
+                      color: 'text.secondary'
                     }}
                   >
                     Klik untuk mengganti gambar
@@ -518,19 +466,17 @@ export default function PengeluaranFormDialog({
                 <Box sx={{ py: 3 }}>
                   <ReceiptIcon sx={{ 
                     fontSize: 48, 
-                    color: isDarkMode ? 'rgba(229, 115, 115, 0.7)' : 'rgba(198, 40, 40, 0.7)', 
+                    color: isDarkMode ? '#90a4ae' : '#616161', 
                     mb: 2 
                   }} />
                   <Typography variant="body1" sx={{ 
                     mb: 1,
-                    color: isDarkMode ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.8)',
-                    fontWeight: 500
+                    color: isDarkMode ? '#ffffff' : '#212121'
                   }}>
                     Klik atau seret file nota ke sini
                   </Typography>
                   <Typography variant="caption" sx={{
-                    color: isDarkMode ? 'rgba(255, 255, 255, 0.6)' : 'rgba(0, 0, 0, 0.6)',
-                    fontWeight: 400
+                    color: isDarkMode ? '#b0bec5' : '#666'
                   }}>
                     Format yang didukung: JPG, PNG, JPEG (Maks. 5MB)
                   </Typography>
@@ -540,50 +486,46 @@ export default function PengeluaranFormDialog({
           </Box>
         </Box>
       </DialogContent>
-
       <DialogActions sx={{
         px: 4,
         py: 3,
-        background: isDarkMode
-          ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0.05) 100%)'
-          : 'linear-gradient(135deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.8) 100%)',
-        backdropFilter: 'blur(20px)',
         borderTop: isDarkMode 
           ? '1px solid rgba(255, 255, 255, 0.1)'
           : '1px solid rgba(0, 0, 0, 0.05)',
-        gap: 2
+        gap: 2,
+        background: isDarkMode
+          ? 'rgba(255, 255, 255, 0.02)'
+          : 'rgba(0, 0, 0, 0.02)',
+        backdropFilter: 'blur(10px)'
       }}>
         <Button
-          onClick={handleClose}
+          onClick={() => setShowModal(false)}
           variant="outlined"
           sx={{
             borderRadius: '12px',
-            px: 4,
-            py: 1.5,
-            fontWeight: 600,
-            textTransform: 'none',
-            fontSize: '0.95rem',
             background: isDarkMode
-              ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.1) 100%)'
-              : 'linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%)',
+              ? 'rgba(255, 255, 255, 0.05)'
+              : 'rgba(255, 255, 255, 0.8)',
             backdropFilter: 'blur(10px)',
             border: isDarkMode 
               ? '1px solid rgba(255, 255, 255, 0.2)'
-              : '1px solid rgba(0, 0, 0, 0.1)',
-            color: isDarkMode ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.6)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              : '1px solid rgba(0, 0, 0, 0.2)',
+            color: isDarkMode ? '#ffffff' : '#666',
+            px: 3,
+            py: 1,
+            transition: 'all 0.3s ease',
             '&:hover': {
               background: isDarkMode
-                ? 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.15) 100%)'
-                : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 1) 100%)',
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(255, 255, 255, 0.9)',
               border: isDarkMode 
-                ? '1px solid rgba(255, 255, 255, 0.3)'
-                : '1px solid rgba(0, 0, 0, 0.2)',
-              color: isDarkMode ? 'rgba(255, 255, 255, 0.9)' : 'rgba(0, 0, 0, 0.8)',
-              transform: 'translateY(-1px)',
+                ? '1px solid rgba(239, 154, 154, 0.3)'
+                : '1px solid rgba(198, 40, 40, 0.3)',
+              color: isDarkMode ? '#ef9a9a' : '#c62828',
+              transform: 'translateY(-2px)',
               boxShadow: isDarkMode
-                ? '0 4px 20px rgba(255, 255, 255, 0.1)'
-                : '0 4px 20px rgba(0, 0, 0, 0.1)'
+                ? '0 4px 16px rgba(255, 255, 255, 0.1)'
+                : '0 4px 16px rgba(198, 40, 40, 0.1)'
             }
           }}
         >
@@ -595,35 +537,37 @@ export default function PengeluaranFormDialog({
           disabled={loading}
           sx={{
             borderRadius: '12px',
-            px: 4,
-            py: 1.5,
-            fontWeight: 600,
-            textTransform: 'none',
-            fontSize: '0.95rem',
             background: isDarkMode
-              ? 'linear-gradient(135deg, #e57373 0%, #f44336 50%, #ef5350 100%)'
-              : 'linear-gradient(135deg, #c62828 0%, #b71c1c 50%, #d32f2f 100%)',
+              ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.8) 0%, rgba(229, 57, 53, 0.9) 50%, rgba(239, 83, 80, 0.8) 100%)'
+              : 'linear-gradient(135deg, rgba(211, 47, 47, 0.9) 0%, rgba(198, 40, 40, 1) 50%, rgba(229, 57, 53, 0.9) 100%)',
+            backdropFilter: 'blur(10px)',
+            border: isDarkMode 
+              ? '1px solid rgba(244, 67, 54, 0.3)'
+              : '1px solid rgba(211, 47, 47, 0.2)',
             boxShadow: isDarkMode
-              ? '0 8px 25px rgba(229, 115, 115, 0.4)'
-              : '0 8px 25px rgba(198, 40, 40, 0.3)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              ? '0 4px 16px rgba(244, 67, 54, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+              : '0 4px 16px rgba(211, 47, 47, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8)',
+            color: '#ffffff',
+            textShadow: '0 1px 2px rgba(0, 0, 0, 0.2)',
+            px: 3,
+            py: 1,
             gap: 1,
+            transition: 'all 0.3s ease',
             '&:hover': {
-              background: isDarkMode
-                ? 'linear-gradient(135deg, #ef5350 0%, #f44336 50%, #e57373 100%)'
-                : 'linear-gradient(135deg, #b71c1c 0%, #c62828 50%, #d32f2f 100%)',
               transform: 'translateY(-2px)',
+              background: isDarkMode
+                ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.9) 0%, rgba(229, 57, 53, 1) 50%, rgba(239, 83, 80, 0.9) 100%)'
+                : 'linear-gradient(135deg, rgba(211, 47, 47, 1) 0%, rgba(198, 40, 40, 1.1) 50%, rgba(229, 57, 53, 1) 100%)',
               boxShadow: isDarkMode
-                ? '0 12px 35px rgba(229, 115, 115, 0.5)'
-                : '0 12px 35px rgba(198, 40, 40, 0.4)'
+                ? '0 6px 20px rgba(244, 67, 54, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+                : '0 6px 20px rgba(211, 47, 47, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
             },
             '&:disabled': {
-              background: isDarkMode 
-                ? 'rgba(255, 255, 255, 0.12)' 
-                : 'rgba(0, 0, 0, 0.12)',
-              color: isDarkMode 
-                ? 'rgba(255, 255, 255, 0.3)' 
-                : 'rgba(0, 0, 0, 0.26)',
+              background: isDarkMode
+                ? 'rgba(255, 255, 255, 0.1)'
+                : 'rgba(0, 0, 0, 0.1)',
+              color: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)',
+              transform: 'none',
               boxShadow: 'none'
             }
           }}
@@ -635,7 +579,7 @@ export default function PengeluaranFormDialog({
             </>
           ) : (
             <>
-              <ReceiptIcon />
+              <SaveIcon />
               Simpan
             </>
           )}

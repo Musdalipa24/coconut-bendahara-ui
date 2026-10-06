@@ -1,5 +1,51 @@
-// Fungsi untuk memformat tanggal dari YYYY-MM-DDTHH:mm ke YYYY-MM-DD HH:mm
+import { getAuthHeaders } from '@/utils/authHeader';
+
+// Fungsi untuk memformat tanggal ke format backend (YYYY-MM-DD HH:mm) dengan menyertakan waktu saat di-input
 const formatDateForBackend = (dateString) => {
+    if (!dateString) {
+        throw new Error('Tanggal harus diisi');
+    }
+
+    const now = new Date();
+    const currentHours = String(now.getHours()).padStart(2, '0');
+    const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+
+    // Jika format YYYY-MM-DD dari input type="date"
+    if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString.trim())) {
+        return `${dateString.trim()} ${currentHours}:${currentMinutes}`;
+    }
+
+    // Jika format ISO string (YYYY-MM-DDTHH:mm...)
+    if (typeof dateString === 'string' && dateString.includes('T')) {
+        const [datePart] = dateString.split('T');
+        return `${datePart} ${currentHours}:${currentMinutes}`;
+    }
+
+    // Jika format YYYY-MM-DD HH:mm atau DD-MM-YYYY HH:mm
+    if (typeof dateString === 'string' && dateString.includes(' ')) {
+        const [datePart] = dateString.split(' ');
+        const parts = datePart.split(/[-/]/);
+        if (parts.length === 3) {
+            if (parts[0].length === 4) {
+                return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')} ${currentHours}:${currentMinutes}`;
+            } else {
+                return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')} ${currentHours}:${currentMinutes}`;
+            }
+        }
+    }
+
+    // Jika format DD-MM-YYYY
+    if (typeof dateString === 'string' && dateString.includes('-')) {
+        const parts = dateString.split('-');
+        if (parts.length === 3) {
+            if (parts[0].length === 4) {
+                return `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')} ${currentHours}:${currentMinutes}`;
+            } else {
+                return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')} ${currentHours}:${currentMinutes}`;
+            }
+        }
+    }
+
     const date = new Date(dateString);
     if (isNaN(date.getTime())) {
         throw new Error('Format tanggal tidak valid');
@@ -7,9 +53,8 @@ const formatDateForBackend = (dateString) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
+
+    return `${year}-${month}-${day} ${currentHours}:${currentMinutes}`;
 };
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8087'; // Fallback jika env tidak ditemukan
@@ -39,19 +84,20 @@ export const pengeluaranService = {
                 throw new Error('Keterangan tidak boleh kosong');
             }
 
-            if (!data.nota) {
-                throw new Error('Nota harus diupload');
-            }
-
             // Prepare FormData with properly formatted date
             const formData = new FormData();
             formData.append('tanggal', formatDateForBackend(data.tanggal)); // Formatted date
             formData.append('nominal', nominal);
             formData.append('keterangan', data.keterangan.trim());
-            formData.append('nota', data.nota); // File object
+            if (data.nota instanceof File) {
+                formData.append('nota', data.nota); // File object
+            }
 
             const response = await fetch(`${API_BASE_URL}/api/pengeluaran/add`, {
                 method: 'POST',
+                headers: {
+                    ...getAuthHeaders()
+                },
                 body: formData,
                 credentials: 'include'
             });
@@ -114,6 +160,9 @@ export const pengeluaranService = {
 
             const response = await fetch(`${API_BASE_URL}/api/pengeluaran/update/${id}`, {
                 method: 'PUT',
+                headers: {
+                    ...getAuthHeaders()
+                },
                 body: formData,
                 credentials: 'include'
             });
@@ -148,6 +197,9 @@ export const pengeluaranService = {
 
             const response = await fetch(`${API_BASE_URL}/api/pengeluaran/delete/${id}`, {
                 method: 'DELETE',
+                headers: {
+                    ...getAuthHeaders()
+                },
                 credentials: 'include'
             });
 
@@ -171,6 +223,9 @@ export const pengeluaranService = {
         try {
             const response = await fetch(`${API_BASE_URL}/api/pengeluaran/getall?page=${page}&page_size=${pageSize}`, {
                 method: 'GET',
+                headers: {
+                    ...getAuthHeaders()
+                },
                 credentials: 'include'
             });
 
@@ -199,6 +254,9 @@ export const pengeluaranService = {
 
             const response = await fetch(`${API_BASE_URL}/api/pengeluaran/get/${id}`, {
                 method: 'GET',
+                headers: {
+                    ...getAuthHeaders()
+                },
                 credentials: 'include'
             });
 

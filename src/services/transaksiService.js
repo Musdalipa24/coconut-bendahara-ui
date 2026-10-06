@@ -1,3 +1,5 @@
+import { getAuthHeaders } from '@/utils/authHeader';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8087';
 
 export const transaksiService = {
@@ -9,6 +11,9 @@ export const transaksiService = {
         try {
             const response = await fetch(`${API_BASE_URL}/api/transaksi/getall`, {
                 method: 'GET',
+                headers: {
+                    ...getAuthHeaders()
+                },
                 credentials: 'include'
             });
 
@@ -33,6 +38,9 @@ export const transaksiService = {
         try {
             const response = await fetch(`${API_BASE_URL}/api/transaksi/getlast`, {
                 method: 'GET',
+                headers: {
+                    ...getAuthHeaders()
+                },
                 credentials: 'include'
             });
 
